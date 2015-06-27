@@ -1,0 +1,261 @@
+$set matout "'matsol2.gdx', x, JMPC, Quality, Scores, Tsqrd ";
+OPTION LIMROW=10
+OPTION LIMCOL=10
+
+SETS
+T 'time steps to end of batch'
+M 'measured variables from mult-model'
+P 'variables predicted using mult-model'
+C 'clusters'
+Q 'qualities'
+max_min 'maximum or minimum for constraint'
+U 'inputs (set used only for constraints)'
+PC 'number of principal components in quality model'
+PD 'past data used in SPE calculations for quality model'
+;
+
+
+
+$gdxin "QBMPCv2sets.gdx"
+$load T
+$load M
+$load P
+$load C
+$load Q
+$load max_min
+$load U
+$load PC
+$load PD
+$gdxin
+
+
+alias(C, C1);
+alias(M, M1);
+
+PARAMETERS
+data(T, M)
+mult_coeffs(M, P, C)
+mult_coeffs_intercept(P, C)
+PLS_intercept(P)
+FCMc(C, M)
+meas_mean(M)
+meas_std(M)
+pred_mean(P)
+pred_std(P)
+qual_coeffs(M, Q, T)
+q_meas_mean(T,M)
+q_meas_std(T,M)
+q_pred_mean(Q)
+q_pred_std(Q)
+contrib_past(Q)
+qual_set(Q)
+input_const(U, max_min)
+t_past_comp(PC)
+w_star(M,PC,T)
+std_scores(PC)
+Tsqrd_limit
+past_data(PD)
+w_star_past(PD,PC)
+SPE_limit
+qual_lo
+input_move_weights(T)
+;
+
+$gdxin "MPCinitialize.gdx"
+$load data
+$load mult_coeffs
+$load mult_coeffs_intercept
+$load PLS_intercept
+$load FCMc
+$load meas_mean
+$load meas_std
+$load pred_mean
+$load pred_std
+$load qual_coeffs
+$load q_meas_mean
+$load q_meas_std
+$load q_pred_mean
+$load q_pred_std
+$load contrib_past
+$load qual_set
+$load input_const
+$load t_past_comp
+$load w_star
+$load std_scores
+$load Tsqrd_limit
+$load past_data
+$load w_star_past
+$load SPE_limit
+$load qual_lo
+*$load input_move_weights
+$gdxin
+
+
+VARIABLES
+X(T,M) 'All trajectories measured by mult model and used by quality model'
+Dist_sqrd(T,C) 'distance from condition at time T to cluster C center'
+Dist_Inv(T,C) 'inverse of distance squared'
+Membership(T, C) 'degree of belonging of time step T to cluster C'
+Quality(Q) 'qualities'
+Scores(PC) 'scores from the quality model'
+Tsqrd 'T squared value for the quality model'
+SPE 'SPE value for the quality model'
+JMPC 'MPC objecive'
+Dummy
+
+*Error_past(M)
+;
+
+* Initialize variables
+X.l(T,M) = data(T,M);
+
+* fix the values corresponding to curent batch condition (ie current state and output)
+x.fx('1','1') = data('1', '1');
+
+x.fx('1','2') = data('1', '2');
+
+x.fx('1','3') = data('1', '3');
+
+x.fx('1','4') = data('1', '4');
+
+*loop (T,
+    x.lo(T, '5') = input_const('1', '1');
+    x.up(T, '5') = input_const('1', '2');
+
+    x.lo(T, '6') = input_const('2', '1');
+    x.up(T, '6') = input_const('2', '2');
+
+    x.lo(T, '7') = input_const('3', '1');
+    x.up(T, '7') = input_const('3', '2');
+*);
+
+
+
+
+
+loop ( T $(ord(T)>1),
+    Dist_sqrd.l(T-1,C) = sum(M, ((x.l(T-1,M)-FCMc(C,M))*(x.l(T-1,M)-FCMc(C,M))));
+    Dist_Inv.l(T-1,C) = 1/(Dist_sqrd.l(T-1,C));
+    Membership.l(T-1,C) = Dist_Inv.l(T-1,C)/sum(C1,Dist_Inv.l(T-1,C1));
+
+    x.l(T,'1') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '1', C))) +
+         sum(C, mult_coeffs_intercept('1',C)*Membership.l(T-1, C))+PLS_intercept('1'))
+         *pred_std('1')+pred_mean('1')-meas_mean('1'))/meas_std('1');
+
+    x.l(T,'2') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '2', C))) +
+         sum(C, mult_coeffs_intercept('2',C)*Membership.l(T-1, C))+PLS_intercept('2'))
+         *pred_std('2')+pred_mean('2')-meas_mean('2'))/meas_std('2');
+
+    x.l(T,'3') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '3', C))) +
+         sum(C, mult_coeffs_intercept('3',C)*Membership.l(T-1, C))+PLS_intercept('3'))
+         *pred_std('3')+pred_mean('3')-meas_mean('3'))/meas_std('3');
+
+    x.l(T,'4') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '4', C))) +
+         sum(C, mult_coeffs_intercept('4',C)*Membership.l(T-1, C))+PLS_intercept('4'))
+         *pred_std('4')+pred_mean('4')-meas_mean('4'))/meas_std('4');
+);
+
+
+
+
+loop (Q,
+
+         Quality.l(Q) = (contrib_past(Q) + sum(T, sum(M,
+                 (x.l(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M)
+                 *qual_coeffs(M, Q, T))));
+
+
+);
+
+
+loop(PC,
+        Scores.l(PC) = t_past_comp(PC) + sum(T, sum(M,
+                 (x.l(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M)
+                  *w_star(M, PC, T)));
+
+
+);
+
+Tsqrd.l = sum(PC, (Scores.l(PC)/std_scores(PC))*(Scores.l(PC)/std_scores(PC)));
+
+Tsqrd.up = Tsqrd_limit;
+
+SPE.l = sum(PD, (sum(PC, Scores.l(PC)*w_star_past(PD,PC))-past_data(PD))*(sum(PC, Scores.l(PC)*w_star_past(PD,PC))-past_data(PD))) ;
+*         +sum(T, sum(M,
+*        (sum(PC, Scores.l(PC)*w_star(M, PC, T))-(x.l(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M))*
+*         (sum(PC, Scores.l(PC)*w_star(M, PC, T))-(x.l(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M))));
+
+SPE.up = SPE_limit;
+
+JMPC.l =sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - qual_set(Q)));
+
+
+
+
+EQUATIONS
+Dist_eqn(T,C)
+Dist_Inv_eqn(T,C)
+Membership_eqn(T,C)
+
+Y1_Mult_Model(T)
+Y2_Mult_Model(T)
+Y3_Mult_Model(T)
+Y4_Mult_Model(T)
+
+Quality_eqn(Q)
+
+Scores_eqn(PC)
+Tsqrd_eqn
+*SPE_eqn
+
+*error_past_eqn(M)
+Objective
+;
+
+Dist_eqn(T,C)$(ord(T)<card(T)) .. Dist_sqrd(T,C) =E=  sum(M, ((x(T,M)-FCMc(C,M))*(x(T,M)-FCMc(C,M))));
+Dist_Inv_eqn(T,C)$(ord(T)<card(T)) .. Dist_Inv(T,C) * Dist_sqrd(T,C) =E= 1;
+Membership_eqn(T,C)$(ord(T)<card(T)) ..  Membership(T,C)*sum(C1, Dist_Inv(T,C1)) =E= Dist_Inv(T,C);
+
+Y1_Mult_Model(T) $(ord(T)>1) .. x(T, '1') =e=  ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '1', C))) +
+  sum(C, mult_coeffs_intercept('1',C)*Membership(T-1, C))+PLS_intercept('1'))
+  *pred_std('1')+pred_mean('1')-meas_mean('1'))/meas_std('1');
+
+Y2_Mult_Model(T) $(ord(T)>1) .. x(T, '2') =e=   ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '2', C))) +
+         sum(C, mult_coeffs_intercept('2',C)*Membership(T-1, C))+PLS_intercept('2'))
+         *pred_std('2')+pred_mean('2')-meas_mean('2'))/meas_std('2');
+
+Y3_Mult_Model(T) $(ord(T)>1) .. x(T, '3') =e=  ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '3', C))) +
+         sum(C, mult_coeffs_intercept('3',C)*Membership(T-1, C))+PLS_intercept('3'))
+         *pred_std('3')+pred_mean('3')-meas_mean('3'))/meas_std('3');
+
+Y4_Mult_Model(T) $(ord(T)>1) .. x(T, '4') =e=  ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '4', C))) +
+         sum(C, mult_coeffs_intercept('4',C)*Membership(T-1, C))+PLS_intercept('4'))
+         *pred_std('4')+pred_mean('4')-meas_mean('4'))/meas_std('4');
+
+Quality_eqn(Q) .. Quality(Q) =e= (contrib_past(Q) + sum(T, sum(M,
+                 (x(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M)
+                 *qual_coeffs(M, Q, T))));
+
+Scores_eqn(PC) .. Scores(PC) =E= t_past_comp(PC) + sum(T, sum(M,
+                 (x(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M)
+                  *w_star(M, PC, T)));
+
+Tsqrd_eqn ..  Tsqrd =E= sum(PC, (Scores(PC)/std_scores(PC))*(Scores(PC)/std_scores(PC)));
+
+*SPE_eqn .. SPE =E= sum(PD, (sum(PC, Scores(PC)*w_star_past(PD,PC))-past_data(PD))*(sum(PC, Scores(PC)*w_star_past(PD,PC))-past_data(PD))) +
+*         sum(T, sum(M,
+*        (sum(PC, Scores(PC)*w_star(M, PC, T))-(x(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M))*
+*         (sum(PC, Scores(PC)*w_star(M, PC, T))-(x(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M))));
+
+Objective .. JMPC =e= (quality('1') - qual_set('1'))*(quality('1') - qual_set('1'))
+                     +(quality('2') - qual_set('2'))*(quality('2') - qual_set('2'))
+                     + (quality('3') - qual_set('3'))*(quality('3') - qual_set('3'))
++ .000005*sum(T$(ord(T)>1), (x(T,'5') - x(T-1,'5'))*(x(T,'5')-x(T-1,'5'))+(x(T,'6') - x(T-1,'6'))*(x(T,'6')-x(T-1,'6'))+(x(T,'7') - x(T-1,'7'))*(x(T,'7')-x(T-1,'7')));
+*input_move_weights(T)*
+
+
+MODEL QBMPC /all/;
+
+solve QBMPC using nlp minimizing JMPC;
+
+execute_unload %matout%;

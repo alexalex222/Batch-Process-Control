@@ -1,0 +1,1934 @@
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   2  OPTION LIMROW=10
+   3  OPTION LIMCOL=10
+   4   
+   5  SETS
+   6  T 'time steps to end of batch'
+   7  M 'measured variables from mult-model'
+   8  P 'variables predicted using mult-model'
+   9  L 'lags in the ARX model'
+  10  Q 'qualities'
+  11  max_min 'maximum or minimum for constraint'
+  12  U 'inputs (set used only for constraints)'
+  13  PC 'number of principal components in quality model' ,
+  14  PD 'past data used in SPE calculations for quality model';
+  15   
+  16   
+  17   
+GDXIN   D:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- LOAD  T = 1:T
+--- LOAD  M = 2:M
+--- LOAD  P = 3:P
+--- LOAD  L = 4:L
+--- LOAD  Q = 5:Q
+--- LOAD  max_min = 6:max_min
+--- LOAD  U = 7:U
+--- LOAD  PC = 8:PC
+--- LOAD  PD = 9:PD
+  29   
+  30   
+  31  alias(M, M1);
+  32   
+  33  PARAMETERS
+  34  data(T, M)
+  35  Coeff_ARX(M,P)
+  36  qual_coeffs(P, Q, T)
+  37  q_meas_mean(T,P)
+  38  q_meas_std(T,P)
+  39  q_pred_mean(Q)
+  40  q_pred_std(Q)
+  41  contrib_past(Q)
+  42  qual_set(Q)
+  43  input_const(U, max_min)
+  44  ;
+  45   
+GDXIN   D:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- LOAD  data = 1:data
+--- LOAD  Coeff_ARX = 4:Coeff_ARX
+--- LOAD  qual_coeffs = 6:qual_coeffs
+--- LOAD  q_meas_mean = 7:q_meas_mean
+--- LOAD  q_meas_std = 8:q_meas_std
+--- LOAD  q_pred_mean = 9:q_pred_mean
+--- LOAD  q_pred_std = 10:q_pred_std
+--- LOAD  contrib_past = 5:Contrib_past
+--- LOAD  qual_set = 11:qual_set
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+--- LOAD  input_const = 12:input_const
+  57   
+  59   
+  60   
+  61  VARIABLES
+  62  X(T,M) 'All trajectories measured by the dynamic model and used by the quality model'
+  63  Y(T,P) 'Measurements'
+  64  Quality(Q) 'qualities'
+  65  JMPC 'MPC objecive'
+  66  Dummy
+  67   
+  68   
+  69  ;
+  70   
+  71  * Initialize variables
+  72  X.l(T,M) = data(T,M);
+  73   
+  74  * fix the values corresponding to curent batch condition (ie current state and output)
+  75  x.fx('1','1') = data('1', '1');
+  76   
+  77  x.fx('1','2') = data('1', '2');
+  78   
+  79  x.fx('1','3') = data('1', '3');
+  80   
+  81  x.fx('1','4') = data('1', '4');
+  82   
+  83   
+  84   
+  85   
+  86  loop (T,
+  87      x.lo(T, '5') = input_const('1', '1');
+  88      x.up(T, '5') = input_const('1', '2');
+  89   
+  90      x.lo(T, '6') = input_const('2', '1');
+  91      x.up(T, '6') = input_const('2', '2');
+  92   
+  93      x.lo(T, '7') = input_const('3', '1');
+  94      x.up(T, '7') = input_const('3', '2');
+  95  );
+  96   
+  97   
+  98   
+  99  loop ( T $(ord(T)>1),
+ 100   
+ 101      x.l(T,'1') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '1'));
+ 102   
+ 103      x.l(T,'2') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '2'));
+ 104   
+ 105      x.l(T,'3') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '3'));
+ 106   
+ 107      x.l(T,'4') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '4'));
+ 108   
+ 109  )
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 110   
+ 111  loop (T,
+ 112   
+ 113     y.l(T,'1')= x.l(T,'1');
+ 114     y.l(T,'2')= x.l(T,'2');
+ 115     y.l(T,'3')= x.l(T,'3');
+ 116     y.l(T,'4')= x.l(T,'4');
+ 117  );
+ 118   
+ 119   
+ 120   
+ 121   
+ 122  loop (Q,
+ 123   
+ 124           Quality.l(Q) = (contrib_past(Q) + sum(T, sum(P,
+ 125                   (y.l(T,P)-q_meas_mean(T,P))/q_meas_std(T,P)
+ 126                   *qual_coeffs(P, Q, T))));
+ 127   
+ 128   
+ 129  );
+ 130   
+ 131   
+ 132   
+ 133  JMPC.l =sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - qual_set(Q)));
+ 134   
+ 135   
+ 136   
+ 137   
+ 138  EQUATIONS
+ 139   
+ 140  Y1_Mult_Model(T)
+ 141  Y2_Mult_Model(T)
+ 142  Y3_Mult_Model(T)
+ 143  Y4_Mult_Model(T)
+ 144   
+ 145  Quality_eqn(Q)
+ 146   
+ 147  Objective
+ 148  ;
+ 149   
+ 150  Y1_Mult_Model(T) $(ord(T)>1) .. x(T, '1') =e= sum(M, x.l(T-1,M)*Coeff_ARX(M, '1'));
+ 151   
+ 152  Y2_Mult_Model(T) $(ord(T)>1) .. x(T, '2') =e= sum(M, x.l(T-1,M)*Coeff_ARX(M, '2'));
+ 153   
+ 154  Y3_Mult_Model(T) $(ord(T)>1) .. x(T, '3') =e= sum(M, x.l(T-1,M)*Coeff_ARX(M, '3'));
+ 155   
+ 156  Y4_Mult_Model(T) $(ord(T)>1) .. x(T, '4') =e= sum(M, x.l(T-1,M)*Coeff_ARX(M, '4'));
+ 157   
+ 158  Quality_eqn(Q) .. Quality(Q) =e= (contrib_past(Q) + sum(T, sum(P, (y.l(T,P)-q_meas_mean(T,P))/q_meas_std(T,P)*qual_coeffs(P, Q, T))));
+ 159   
+ 160   
+ 161   
+ 162  Objective .. JMPC =e= sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - qual_set(Q)))
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 163  + .000000*sum(T $(ord(T)>1), (x(T,'5') - 0.04)*(x(T,'5')-0.04)+(x(T,'6') - 8)*(x(T,'6') - 8)+(x(T,'7') - 30)*(x(T,'7') - 30));
+ 164   
+ 165   
+ 166   
+ 167  MODEL QBMPC /all/;
+ 168   
+ 169  solve QBMPC using nlp minimizing JMPC;
+ 170   
+ 171  execute_unload 'matsol2.gdx', X, JMPC, Quality;
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
+
+     1        1 INPUT          0       0  D:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM1.gms
+     2       18 GDXIN          1      18  D:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+     3       46 GDXIN          1      46  D:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 Mb  WIN240-240 Feb 14, 2013
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE QBMPC Using NLP From line 169
+
+
+---- Y1_Mult_Model  =E=  
+
+Y1_Mult_Model(2)..  X(2,1) =E= 298.007910369622 ; (LHS = 298.007910369622)
+     
+Y1_Mult_Model(3)..  X(3,1) =E= 298.009885105535 ; (LHS = 298.009885105535)
+     
+Y1_Mult_Model(4)..  X(4,1) =E= 298.011643295002 ; (LHS = 298.011643295002)
+     
+Y1_Mult_Model(5)..  X(5,1) =E= 298.013185649694 ; (LHS = 298.013185649694)
+     
+Y1_Mult_Model(6)..  X(6,1) =E= 298.014513046263 ; (LHS = 298.014513046263)
+     
+Y1_Mult_Model(7)..  X(7,1) =E= 298.01562652322 ; (LHS = 298.01562652322)
+     
+Y1_Mult_Model(8)..  X(8,1) =E= 298.016527277725 ; (LHS = 298.016527277725)
+     
+Y1_Mult_Model(9)..  X(9,1) =E= 298.01721666229 ; (LHS = 298.01721666229)
+     
+Y1_Mult_Model(10)..  X(10,1) =E= 298.017696181406 ; (LHS = 298.017696181406)
+     
+Y1_Mult_Model(11)..  X(11,1) =E= 298.017967488087 ; (LHS = 298.017967488087)
+     
+REMAINING 138 ENTRIES SKIPPED
+
+
+---- Y2_Mult_Model  =E=  
+
+Y2_Mult_Model(2)..  X(2,2) =E= 1.1272874601672 ; (LHS = 1.1272874601672)
+     
+Y2_Mult_Model(3)..  X(3,2) =E= 1.12938140938683 ; (LHS = 1.12938140938683)
+     
+Y2_Mult_Model(4)..  X(4,2) =E= 1.13149282055561 ; (LHS = 1.13149282055561)
+     
+Y2_Mult_Model(5)..  X(5,2) =E= 1.13361975024877 ; (LHS = 1.13361975024877)
+     
+Y2_Mult_Model(6)..  X(6,2) =E= 1.13576027033239 ; (LHS = 1.13576027033239)
+     
+Y2_Mult_Model(7)..  X(7,2) =E= 1.1379124693427 ; (LHS = 1.1379124693427)
+     
+Y2_Mult_Model(8)..  X(8,2) =E= 1.14007445383138 ; (LHS = 1.14007445383138)
+     
+Y2_Mult_Model(9)..  X(9,2) =E= 1.14224434967651 ; (LHS = 1.14224434967651)
+     
+Y2_Mult_Model(10)..  X(10,2) =E= 1.14442030335833 ; (LHS = 1.14442030335833)
+     
+Y2_Mult_Model(11)..  X(11,2) =E= 1.1466004831995 ; (LHS = 1.1466004831995)
+     
+REMAINING 138 ENTRIES SKIPPED
+
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE QBMPC Using NLP From line 169
+
+
+---- Y3_Mult_Model  =E=  
+
+Y3_Mult_Model(2)..  X(2,3) =E= 0.677218586532593 ; (LHS = 0.677218586532593)
+     
+Y3_Mult_Model(3)..  X(3,3) =E= 0.686942109208217 ; (LHS = 0.686942109208217)
+     
+Y3_Mult_Model(4)..  X(4,3) =E= 0.695842653041074 ; (LHS = 0.695842653041074)
+     
+Y3_Mult_Model(5)..  X(5,3) =E= 0.703922359337498 ; (LHS = 0.703922359337498)
+     
+Y3_Mult_Model(6)..  X(6,3) =E= 0.711184020259384 ; (LHS = 0.711184020259384)
+     
+Y3_Mult_Model(7)..  X(7,3) =E= 0.717631067060995 ; (LHS = 0.717631067060995)
+     
+Y3_Mult_Model(8)..  X(8,3) =E= 0.723267557965751 ; (LHS = 0.723267557965751)
+     
+Y3_Mult_Model(9)..  X(9,3) =E= 0.728098165698321 ; (LHS = 0.728098165698321)
+     
+Y3_Mult_Model(10)..  X(10,3) =E= 0.732128164687344 ; (LHS = 0.732128164687344)
+     
+Y3_Mult_Model(11)..  X(11,3) =E= 0.735363417954217 ; (LHS = 0.735363417954217)
+     
+REMAINING 138 ENTRIES SKIPPED
+
+
+---- Y4_Mult_Model  =E=  
+
+Y4_Mult_Model(2)..  X(2,4) =E= 103.240043062625 ; (LHS = 103.240043062625)
+     
+Y4_Mult_Model(3)..  X(3,4) =E= 103.227205060003 ; (LHS = 103.227205060003)
+     
+Y4_Mult_Model(4)..  X(4,4) =E= 103.214369352985 ; (LHS = 103.214369352985)
+     
+Y4_Mult_Model(5)..  X(5,4) =E= 103.201535981657 ; (LHS = 103.201535981657)
+     
+Y4_Mult_Model(6)..  X(6,4) =E= 103.188704984698 ; (LHS = 103.188704984698)
+     
+Y4_Mult_Model(7)..  X(7,4) =E= 103.175876399372 ; (LHS = 103.175876399372)
+     
+Y4_Mult_Model(8)..  X(8,4) =E= 103.163050261516 ; (LHS = 103.163050261516)
+     
+Y4_Mult_Model(9)..  X(9,4) =E= 103.150226605531 ; (LHS = 103.150226605531)
+     
+Y4_Mult_Model(10)..  X(10,4) =E= 103.137405464374 ; (LHS = 103.137405464374)
+     
+Y4_Mult_Model(11)..  X(11,4) =E= 103.124586869552 ; (LHS = 103.124586869552)
+     
+REMAINING 138 ENTRIES SKIPPED
+
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE QBMPC Using NLP From line 169
+
+
+---- Quality_eqn  =E=  
+
+Quality_eqn(1)..  Quality(1) =E= -2.92511779297954 ; (LHS = -2.92511779297954)
+     
+Quality_eqn(2)..  Quality(2) =E= 2.67911473357152 ; (LHS = 2.67911473357152)
+     
+Quality_eqn(3)..  Quality(3) =E= -11.2883062722148 ; (LHS = -11.2883062722148)
+     
+
+---- Objective  =E=  
+
+Objective..  JMPC =E= 301.286715809067 ; (LHS = 301.286715809067)
+     
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                            04/02/14 10:43:07 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE QBMPC Using NLP From line 169
+
+
+---- X  All trajectories measured by the dynamic model and used by the quality model
+
+X(2,1)
+                (.LO, .L, .UP, .M = -INF, 298.007910369622, +INF, 0)
+        1       Y1_Mult_Model(2)
+
+X(2,2)
+                (.LO, .L, .UP, .M = -INF, 1.1272874601672, +INF, 0)
+        1       Y2_Mult_Model(2)
+
+X(2,3)
+                (.LO, .L, .UP, .M = -INF, 0.677218586532593, +INF, 0)
+        1       Y3_Mult_Model(2)
+
+X(2,4)
+                (.LO, .L, .UP, .M = -INF, 103.240043062625, +INF, 0)
+        1       Y4_Mult_Model(2)
+
+X(3,1)
+                (.LO, .L, .UP, .M = -INF, 298.009885105535, +INF, 0)
+        1       Y1_Mult_Model(3)
+
+X(3,2)
+                (.LO, .L, .UP, .M = -INF, 1.12938140938683, +INF, 0)
+        1       Y2_Mult_Model(3)
+
+X(3,3)
+                (.LO, .L, .UP, .M = -INF, 0.686942109208217, +INF, 0)
+        1       Y3_Mult_Model(3)
+
+X(3,4)
+                (.LO, .L, .UP, .M = -INF, 103.227205060003, +INF, 0)
+        1       Y4_Mult_Model(3)
+
+X(4,1)
+                (.LO, .L, .UP, .M = -INF, 298.011643295002, +INF, 0)
+        1       Y1_Mult_Model(4)
+
+X(4,2)
+                (.LO, .L, .UP, .M = -INF, 1.13149282055561, +INF, 0)
+        1       Y2_Mult_Model(4)
+
+REMAINING 582 ENTRIES SKIPPED
+
+---- Quality  qualities
+
+Quality(1)
+                (.LO, .L, .UP, .M = -INF, -2.92511779297954, +INF, 0)
+        1       Quality_eqn(1)
+
+Quality(2)
+                (.LO, .L, .UP, .M = -INF, 2.67911473357152, +INF, 0)
+        1       Quality_eqn(2)
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 10
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE QBMPC Using NLP From line 169
+
+
+     Quality  qualities
+
+
+Quality(3)
+                (.LO, .L, .UP, .M = -INF, -11.2883062722148, +INF, 0)
+        1       Quality_eqn(3)
+
+
+---- JMPC  MPC objecive
+
+JMPC
+                (.LO, .L, .UP, .M = -INF, 301.286715809067, +INF, 0)
+        1       Objective
+
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 11
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE QBMPC Using NLP From line 169
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           6     SINGLE EQUATIONS          596
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES          596
+NON ZERO ELEMENTS           596     NON LINEAR N-Z              0
+DERIVATIVE POOL              10     CONSTANT POOL              19
+CODE LENGTH                   0
+
+
+GENERATION TIME      =        0.015 SECONDS      4 Mb  WIN240-240 Feb 14, 2013
+
+
+EXECUTION TIME       =        0.047 SECONDS      4 Mb  WIN240-240 Feb 14, 2013
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 12
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   QBMPC               OBJECTIVE  JMPC
+     TYPE    NLP                 DIRECTION  MINIMIZE
+     SOLVER  CONOPT              FROM LINE  169
+
+**** SOLVER STATUS     1 Normal Completion         
+**** MODEL STATUS      1 Optimal                   
+**** OBJECTIVE VALUE              301.2867
+
+ RESOURCE USAGE, LIMIT          0.000      1000.000
+ ITERATION COUNT, LIMIT         4    2000000000
+ EVALUATION ERRORS              0             0
+CONOPT 3         Feb 14, 2013 24.0.2 WIN 38380.38394 VS8 x86/MS Windows       
+ 
+ 
+    C O N O P T 3   version 3.15I
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+ 
+ CONOPT time Total                            0.002 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+ 
+
+---- EQU Y1_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2         298.0079       298.0079       298.0079         EPS         
+3         298.0099       298.0099       298.0099         EPS         
+4         298.0116       298.0116       298.0116         EPS         
+5         298.0132       298.0132       298.0132         EPS         
+6         298.0145       298.0145       298.0145         EPS         
+7         298.0156       298.0156       298.0156         EPS         
+8         298.0165       298.0165       298.0165         EPS         
+9         298.0172       298.0172       298.0172         EPS         
+10        298.0177       298.0177       298.0177         EPS         
+11        298.0180       298.0180       298.0180         EPS         
+12        298.0180       298.0180       298.0180         EPS         
+13        298.0179       298.0179       298.0179         EPS         
+14        298.0176       298.0176       298.0176         EPS         
+15        298.0170       298.0170       298.0170         EPS         
+16        298.0163       298.0163       298.0163         EPS         
+17        298.0153       298.0153       298.0153         EPS         
+18        298.0142       298.0142       298.0142         EPS         
+19        298.0129       298.0129       298.0129         EPS         
+20        298.0114       298.0114       298.0114         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 13
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y1_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+21        298.0097       298.0097       298.0097         EPS         
+22        298.0078       298.0078       298.0078         EPS         
+23        298.0058       298.0058       298.0058         EPS         
+24        298.0035       298.0035       298.0035         EPS         
+25        298.0012       298.0012       298.0012         EPS         
+26        297.9986       297.9986       297.9986         EPS         
+27        297.9959       297.9959       297.9959         EPS         
+28        297.9930       297.9930       297.9930         EPS         
+29        297.9899       297.9899       297.9899         EPS         
+30        297.9867       297.9867       297.9867         EPS         
+31        297.9834       297.9834       297.9834         EPS         
+32        297.9799       297.9799       297.9799         EPS         
+33        297.9762       297.9762       297.9762         EPS         
+34        297.9725       297.9725       297.9725         EPS         
+35        297.9686       297.9686       297.9686         EPS         
+36        297.9654       297.9654       297.9654         EPS         
+37        297.9627       297.9627       297.9627         EPS         
+38        297.9604       297.9604       297.9604         EPS         
+39        297.9587       297.9587       297.9587         EPS         
+40        297.9574       297.9574       297.9574         EPS         
+41        297.9566       297.9566       297.9566         EPS         
+42        297.9562       297.9562       297.9562         EPS         
+43        297.9563       297.9563       297.9563         EPS         
+44        297.9569       297.9569       297.9569         EPS         
+45        297.9578       297.9578       297.9578         EPS         
+46        297.9592       297.9592       297.9592         EPS         
+47        297.9611       297.9611       297.9611         EPS         
+48        297.9633       297.9633       297.9633         EPS         
+49        297.9660       297.9660       297.9660         EPS         
+50        297.9690       297.9690       297.9690         EPS         
+51        297.9725       297.9725       297.9725         EPS         
+52        297.9763       297.9763       297.9763         EPS         
+53        297.9805       297.9805       297.9805         EPS         
+54        297.9851       297.9851       297.9851         EPS         
+55        297.9900       297.9900       297.9900         EPS         
+56        297.9953       297.9953       297.9953         EPS         
+57        298.0009       298.0009       298.0009         EPS         
+58        298.0069       298.0069       298.0069         EPS         
+59        298.0132       298.0132       298.0132         EPS         
+60        298.0198       298.0198       298.0198         EPS         
+61        298.0267       298.0267       298.0267         EPS         
+62        298.0338       298.0338       298.0338         EPS         
+63        298.0413       298.0413       298.0413         EPS         
+64        298.0491       298.0491       298.0491         EPS         
+65        298.0571       298.0571       298.0571         EPS         
+66        298.0653       298.0653       298.0653         EPS         
+67        298.0738       298.0738       298.0738         EPS         
+68        298.0825       298.0825       298.0825         EPS         
+69        298.0915       298.0915       298.0915         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 14
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y1_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+70        298.1006       298.1006       298.1006         EPS         
+71        298.1100       298.1100       298.1100         EPS         
+72        298.1195       298.1195       298.1195         EPS         
+73        298.1293       298.1293       298.1293         EPS         
+74        298.1392       298.1392       298.1392         EPS         
+75        298.1492       298.1492       298.1492         EPS         
+76        298.1594       298.1594       298.1594         EPS         
+77        298.1698       298.1698       298.1698         EPS         
+78        298.1802       298.1802       298.1802         EPS         
+79        298.1908       298.1908       298.1908         EPS         
+80        298.2015       298.2015       298.2015         EPS         
+81        298.2123       298.2123       298.2123         EPS         
+82        298.2232       298.2232       298.2232         EPS         
+83        298.2341       298.2341       298.2341         EPS         
+84        298.2452       298.2452       298.2452         EPS         
+85        298.2562       298.2562       298.2562         EPS         
+86        298.2674       298.2674       298.2674         EPS         
+87        298.2785       298.2785       298.2785         EPS         
+88        298.2897       298.2897       298.2897         EPS         
+89        298.3009       298.3009       298.3009         EPS         
+90        298.3122       298.3122       298.3122         EPS         
+91        298.3234       298.3234       298.3234         EPS         
+92        298.3346       298.3346       298.3346         EPS         
+93        298.3458       298.3458       298.3458         EPS         
+94        298.3570       298.3570       298.3570         EPS         
+95        298.3681       298.3681       298.3681         EPS         
+96        298.3792       298.3792       298.3792         EPS         
+97        298.3903       298.3903       298.3903         EPS         
+98        298.4013       298.4013       298.4013         EPS         
+99        298.4122       298.4122       298.4122         EPS         
+100       298.4230       298.4230       298.4230         EPS         
+101       298.4338       298.4338       298.4338         EPS         
+102       298.4445       298.4445       298.4445         EPS         
+103       298.4551       298.4551       298.4551         EPS         
+104       298.4655       298.4655       298.4655         EPS         
+105       298.4759       298.4759       298.4759         EPS         
+106       298.4862       298.4862       298.4862         EPS         
+107       298.4963       298.4963       298.4963         EPS         
+108       298.5063       298.5063       298.5063         EPS         
+109       298.5162       298.5162       298.5162         EPS         
+110       298.5259       298.5259       298.5259         EPS         
+111       298.5354       298.5354       298.5354         EPS         
+112       298.5449       298.5449       298.5449         EPS         
+113       298.5541       298.5541       298.5541         EPS         
+114       298.5632       298.5632       298.5632         EPS         
+115       298.5722       298.5722       298.5722         EPS         
+116       298.5809       298.5809       298.5809         EPS         
+117       298.5895       298.5895       298.5895         EPS         
+118       298.5979       298.5979       298.5979         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 15
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y1_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+119       298.6061       298.6061       298.6061         EPS         
+120       298.6142       298.6142       298.6142         EPS         
+121       298.6220       298.6220       298.6220         EPS         
+122       298.6297       298.6297       298.6297         EPS         
+123       298.6371       298.6371       298.6371         EPS         
+124       298.6443       298.6443       298.6443         EPS         
+125       298.6514       298.6514       298.6514         EPS         
+126       298.6582       298.6582       298.6582         EPS         
+127       298.6649       298.6649       298.6649         EPS         
+128       298.6713       298.6713       298.6713         EPS         
+129       298.6775       298.6775       298.6775         EPS         
+130       298.6835       298.6835       298.6835         EPS         
+131       298.6893       298.6893       298.6893         EPS         
+132       298.6948       298.6948       298.6948         EPS         
+133       298.7002       298.7002       298.7002         EPS         
+134       298.7053       298.7053       298.7053         EPS         
+135       298.7102       298.7102       298.7102         EPS         
+136       298.7149       298.7149       298.7149         EPS         
+137       298.7194       298.7194       298.7194         EPS         
+138       298.7236       298.7236       298.7236         EPS         
+139       298.7276       298.7276       298.7276         EPS         
+140       298.7314       298.7314       298.7314         EPS         
+141       298.7350       298.7350       298.7350         EPS         
+142       298.7384       298.7384       298.7384         EPS         
+143       298.7416       298.7416       298.7416         EPS         
+144       298.7445       298.7445       298.7445         EPS         
+145       298.7473       298.7473       298.7473         EPS         
+146       298.7498       298.7498       298.7498         EPS         
+147       298.7521       298.7521       298.7521         EPS         
+148       298.7542       298.7542       298.7542         EPS         
+149       298.7561       298.7561       298.7561         EPS         
+
+---- EQU Y2_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2           1.1273         1.1273         1.1273         EPS         
+3           1.1294         1.1294         1.1294         EPS         
+4           1.1315         1.1315         1.1315         EPS         
+5           1.1336         1.1336         1.1336         EPS         
+6           1.1358         1.1358         1.1358         EPS         
+7           1.1379         1.1379         1.1379         EPS         
+8           1.1401         1.1401         1.1401         EPS         
+9           1.1422         1.1422         1.1422         EPS         
+10          1.1444         1.1444         1.1444         EPS         
+11          1.1466         1.1466         1.1466         EPS         
+12          1.1488         1.1488         1.1488         EPS         
+13          1.1510         1.1510         1.1510         EPS         
+14          1.1531         1.1531         1.1531         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 16
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y2_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+15          1.1553         1.1553         1.1553         EPS         
+16          1.1575         1.1575         1.1575         EPS         
+17          1.1597         1.1597         1.1597         EPS         
+18          1.1618         1.1618         1.1618         EPS         
+19          1.1640         1.1640         1.1640         EPS         
+20          1.1661         1.1661         1.1661         EPS         
+21          1.1682         1.1682         1.1682         EPS         
+22          1.1704         1.1704         1.1704         EPS         
+23          1.1725         1.1725         1.1725         EPS         
+24          1.1745         1.1745         1.1745         EPS         
+25          1.1766         1.1766         1.1766         EPS         
+26          1.1786         1.1786         1.1786         EPS         
+27          1.1807         1.1807         1.1807         EPS         
+28          1.1827         1.1827         1.1827         EPS         
+29          1.1846         1.1846         1.1846         EPS         
+30          1.1866         1.1866         1.1866         EPS         
+31          1.1885         1.1885         1.1885         EPS         
+32          1.1904         1.1904         1.1904         EPS         
+33          1.1923         1.1923         1.1923         EPS         
+34          1.1941         1.1941         1.1941         EPS         
+35          1.1959         1.1959         1.1959         EPS         
+36          1.1909         1.1909         1.1909         EPS         
+37          1.1858         1.1858         1.1858         EPS         
+38          1.1807         1.1807         1.1807         EPS         
+39          1.1756         1.1756         1.1756         EPS         
+40          1.1706         1.1706         1.1706         EPS         
+41          1.1655         1.1655         1.1655         EPS         
+42          1.1605         1.1605         1.1605         EPS         
+43          1.1555         1.1555         1.1555         EPS         
+44          1.1505         1.1505         1.1505         EPS         
+45          1.1455         1.1455         1.1455         EPS         
+46          1.1406         1.1406         1.1406         EPS         
+47          1.1356         1.1356         1.1356         EPS         
+48          1.1308         1.1308         1.1308         EPS         
+49          1.1259         1.1259         1.1259         EPS         
+50          1.1212         1.1212         1.1212         EPS         
+51          1.1164         1.1164         1.1164         EPS         
+52          1.1117         1.1117         1.1117         EPS         
+53          1.1071         1.1071         1.1071         EPS         
+54          1.1025         1.1025         1.1025         EPS         
+55          1.0980         1.0980         1.0980         EPS         
+56          1.0935         1.0935         1.0935         EPS         
+57          1.0891         1.0891         1.0891         EPS         
+58          1.0848         1.0848         1.0848         EPS         
+59          1.0806         1.0806         1.0806         EPS         
+60          1.0764         1.0764         1.0764         EPS         
+61          1.0723         1.0723         1.0723         EPS         
+62          1.0682         1.0682         1.0682         EPS         
+63          1.0643         1.0643         1.0643         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 17
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y2_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+64          1.0604         1.0604         1.0604         EPS         
+65          1.0566         1.0566         1.0566         EPS         
+66          1.0529         1.0529         1.0529         EPS         
+67          1.0493         1.0493         1.0493         EPS         
+68          1.0458         1.0458         1.0458         EPS         
+69          1.0424         1.0424         1.0424         EPS         
+70          1.0390         1.0390         1.0390         EPS         
+71          1.0358         1.0358         1.0358         EPS         
+72          1.0326         1.0326         1.0326         EPS         
+73          1.0295         1.0295         1.0295         EPS         
+74          1.0266         1.0266         1.0266         EPS         
+75          1.0237         1.0237         1.0237         EPS         
+76          1.0210         1.0210         1.0210         EPS         
+77          1.0183         1.0183         1.0183         EPS         
+78          1.0157         1.0157         1.0157         EPS         
+79          1.0133         1.0133         1.0133         EPS         
+80          1.0109         1.0109         1.0109         EPS         
+81          1.0086         1.0086         1.0086         EPS         
+82          1.0065         1.0065         1.0065         EPS         
+83          1.0044         1.0044         1.0044         EPS         
+84          1.0025         1.0025         1.0025         EPS         
+85          1.0006         1.0006         1.0006         EPS         
+86          0.9989         0.9989         0.9989         EPS         
+87          0.9972         0.9972         0.9972         EPS         
+88          0.9957         0.9957         0.9957         EPS         
+89          0.9942         0.9942         0.9942         EPS         
+90          0.9929         0.9929         0.9929         EPS         
+91          0.9917         0.9917         0.9917         EPS         
+92          0.9905         0.9905         0.9905         EPS         
+93          0.9895         0.9895         0.9895         EPS         
+94          0.9886         0.9886         0.9886         EPS         
+95          0.9877         0.9877         0.9877         EPS         
+96          0.9870         0.9870         0.9870         EPS         
+97          0.9863         0.9863         0.9863         EPS         
+98          0.9858         0.9858         0.9858         EPS         
+99          0.9853         0.9853         0.9853         EPS         
+100         0.9850         0.9850         0.9850         EPS         
+101         0.9847         0.9847         0.9847         EPS         
+102         0.9846         0.9846         0.9846         EPS         
+103         0.9845         0.9845         0.9845         EPS         
+104         0.9845         0.9845         0.9845         EPS         
+105         0.9846         0.9846         0.9846         EPS         
+106         0.9848         0.9848         0.9848         EPS         
+107         0.9851         0.9851         0.9851         EPS         
+108         0.9854         0.9854         0.9854         EPS         
+109         0.9859         0.9859         0.9859         EPS         
+110         0.9864         0.9864         0.9864         EPS         
+111         0.9870         0.9870         0.9870         EPS         
+112         0.9876         0.9876         0.9876         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 18
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y2_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+113         0.9884         0.9884         0.9884         EPS         
+114         0.9892         0.9892         0.9892         EPS         
+115         0.9901         0.9901         0.9901         EPS         
+116         0.9911         0.9911         0.9911         EPS         
+117         0.9921         0.9921         0.9921         EPS         
+118         0.9932         0.9932         0.9932         EPS         
+119         0.9944         0.9944         0.9944         EPS         
+120         0.9956         0.9956         0.9956         EPS         
+121         0.9969         0.9969         0.9969         EPS         
+122         0.9983         0.9983         0.9983         EPS         
+123         0.9997         0.9997         0.9997         EPS         
+124         1.0011         1.0011         1.0011         EPS         
+125         1.0026         1.0026         1.0026         EPS         
+126         1.0042         1.0042         1.0042         EPS         
+127         1.0058         1.0058         1.0058         EPS         
+128         1.0075         1.0075         1.0075         EPS         
+129         1.0092         1.0092         1.0092         EPS         
+130         1.0109         1.0109         1.0109         EPS         
+131         1.0127         1.0127         1.0127         EPS         
+132         1.0145         1.0145         1.0145         EPS         
+133         1.0164         1.0164         1.0164         EPS         
+134         1.0182         1.0182         1.0182         EPS         
+135         1.0202         1.0202         1.0202         EPS         
+136         1.0221         1.0221         1.0221         EPS         
+137         1.0241         1.0241         1.0241         EPS         
+138         1.0261         1.0261         1.0261         EPS         
+139         1.0281         1.0281         1.0281         EPS         
+140         1.0302         1.0302         1.0302         EPS         
+141         1.0322         1.0322         1.0322         EPS         
+142         1.0343         1.0343         1.0343         EPS         
+143         1.0364         1.0364         1.0364         EPS         
+144         1.0385         1.0385         1.0385         EPS         
+145         1.0406         1.0406         1.0406         EPS         
+146         1.0428         1.0428         1.0428         EPS         
+147         1.0449         1.0449         1.0449         EPS         
+148         1.0471         1.0471         1.0471         EPS         
+149         1.0492         1.0492         1.0492         EPS         
+
+---- EQU Y3_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2           0.6772         0.6772         0.6772         EPS         
+3           0.6869         0.6869         0.6869         EPS         
+4           0.6958         0.6958         0.6958         EPS         
+5           0.7039         0.7039         0.7039         EPS         
+6           0.7112         0.7112         0.7112         EPS         
+7           0.7176         0.7176         0.7176         EPS         
+8           0.7233         0.7233         0.7233         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 19
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y3_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+9           0.7281         0.7281         0.7281         EPS         
+10          0.7321         0.7321         0.7321         EPS         
+11          0.7354         0.7354         0.7354         EPS         
+12          0.7378         0.7378         0.7378         EPS         
+13          0.7395         0.7395         0.7395         EPS         
+14          0.7404         0.7404         0.7404         EPS         
+15          0.7405         0.7405         0.7405         EPS         
+16          0.7399         0.7399         0.7399         EPS         
+17          0.7385         0.7385         0.7385         EPS         
+18          0.7364         0.7364         0.7364         EPS         
+19          0.7335         0.7335         0.7335         EPS         
+20          0.7300         0.7300         0.7300         EPS         
+21          0.7257         0.7257         0.7257         EPS         
+22          0.7207         0.7207         0.7207         EPS         
+23          0.7151         0.7151         0.7151         EPS         
+24          0.7088         0.7088         0.7088         EPS         
+25          0.7018         0.7018         0.7018         EPS         
+26          0.6941         0.6941         0.6941         EPS         
+27          0.6859         0.6859         0.6859         EPS         
+28          0.6770         0.6770         0.6770         EPS         
+29          0.6675         0.6675         0.6675         EPS         
+30          0.6575         0.6575         0.6575         EPS         
+31          0.6468         0.6468         0.6468         EPS         
+32          0.6356         0.6356         0.6356         EPS         
+33          0.6238         0.6238         0.6238         EPS         
+34          0.6116         0.6116         0.6116         EPS         
+35          0.5988         0.5988         0.5988         EPS         
+36          0.5862         0.5862         0.5862         EPS         
+37          0.5756         0.5756         0.5756         EPS         
+38          0.5668         0.5668         0.5668         EPS         
+39          0.5598         0.5598         0.5598         EPS         
+40          0.5547         0.5547         0.5547         EPS         
+41          0.5514         0.5514         0.5514         EPS         
+42          0.5499         0.5499         0.5499         EPS         
+43          0.5501         0.5501         0.5501         EPS         
+44          0.5520         0.5520         0.5520         EPS         
+45          0.5557         0.5557         0.5557         EPS         
+46          0.5610         0.5610         0.5610         EPS         
+47          0.5680         0.5680         0.5680         EPS         
+48          0.5767         0.5767         0.5767         EPS         
+49          0.5869         0.5869         0.5869         EPS         
+50          0.5987         0.5987         0.5987         EPS         
+51          0.6120         0.6120         0.6120         EPS         
+52          0.6269         0.6269         0.6269         EPS         
+53          0.6432         0.6432         0.6432         EPS         
+54          0.6610         0.6610         0.6610         EPS         
+55          0.6802         0.6802         0.6802         EPS         
+56          0.7007         0.7007         0.7007         EPS         
+57          0.7226         0.7226         0.7226         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 20
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y3_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+58          0.7458         0.7458         0.7458         EPS         
+59          0.7702         0.7702         0.7702         EPS         
+60          0.7959         0.7959         0.7959         EPS         
+61          0.8228         0.8228         0.8228         EPS         
+62          0.8508         0.8508         0.8508         EPS         
+63          0.8800         0.8800         0.8800         EPS         
+64          0.9102         0.9102         0.9102         EPS         
+65          0.9414         0.9414         0.9414         EPS         
+66          0.9737         0.9737         0.9737         EPS         
+67          1.0069         1.0069         1.0069         EPS         
+68          1.0411         1.0411         1.0411         EPS         
+69          1.0761         1.0761         1.0761         EPS         
+70          1.1120         1.1120         1.1120         EPS         
+71          1.1486         1.1486         1.1486         EPS         
+72          1.1860         1.1860         1.1860         EPS         
+73          1.2242         1.2242         1.2242         EPS         
+74          1.2630         1.2630         1.2630         EPS         
+75          1.3025         1.3025         1.3025         EPS         
+76          1.3425         1.3425         1.3425         EPS         
+77          1.3831         1.3831         1.3831         EPS         
+78          1.4243         1.4243         1.4243         EPS         
+79          1.4659         1.4659         1.4659         EPS         
+80          1.5080         1.5080         1.5080         EPS         
+81          1.5504         1.5504         1.5504         EPS         
+82          1.5932         1.5932         1.5932         EPS         
+83          1.6364         1.6364         1.6364         EPS         
+84          1.6798         1.6798         1.6798         EPS         
+85          1.7235         1.7235         1.7235         EPS         
+86          1.7673         1.7673         1.7673         EPS         
+87          1.8114         1.8114         1.8114         EPS         
+88          1.8555         1.8555         1.8555         EPS         
+89          1.8998         1.8998         1.8998         EPS         
+90          1.9441         1.9441         1.9441         EPS         
+91          1.9885         1.9885         1.9885         EPS         
+92          2.0328         2.0328         2.0328         EPS         
+93          2.0771         2.0771         2.0771         EPS         
+94          2.1213         2.1213         2.1213         EPS         
+95          2.1654         2.1654         2.1654         EPS         
+96          2.2094         2.2094         2.2094         EPS         
+97          2.2531         2.2531         2.2531         EPS         
+98          2.2967         2.2967         2.2967         EPS         
+99          2.3400         2.3400         2.3400         EPS         
+100         2.3830         2.3830         2.3830         EPS         
+101         2.4257         2.4257         2.4257         EPS         
+102         2.4681         2.4681         2.4681         EPS         
+103         2.5102         2.5102         2.5102         EPS         
+104         2.5518         2.5518         2.5518         EPS         
+105         2.5930         2.5930         2.5930         EPS         
+106         2.6338         2.6338         2.6338         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 21
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y3_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+107         2.6741         2.6741         2.6741         EPS         
+108         2.7139         2.7139         2.7139         EPS         
+109         2.7532         2.7532         2.7532         EPS         
+110         2.7920         2.7920         2.7920         EPS         
+111         2.8302         2.8302         2.8302         EPS         
+112         2.8678         2.8678         2.8678         EPS         
+113         2.9048         2.9048         2.9048         EPS         
+114         2.9412         2.9412         2.9412         EPS         
+115         2.9769         2.9769         2.9769         EPS         
+116         3.0119         3.0119         3.0119         EPS         
+117         3.0463         3.0463         3.0463         EPS         
+118         3.0800         3.0800         3.0800         EPS         
+119         3.1130         3.1130         3.1130         EPS         
+120         3.1452         3.1452         3.1452         EPS         
+121         3.1767         3.1767         3.1767         EPS         
+122         3.2074         3.2074         3.2074         EPS         
+123         3.2374         3.2374         3.2374         EPS         
+124         3.2666         3.2666         3.2666         EPS         
+125         3.2950         3.2950         3.2950         EPS         
+126         3.3225         3.3225         3.3225         EPS         
+127         3.3493         3.3493         3.3493         EPS         
+128         3.3753         3.3753         3.3753         EPS         
+129         3.4004         3.4004         3.4004         EPS         
+130         3.4247         3.4247         3.4247         EPS         
+131         3.4481         3.4481         3.4481         EPS         
+132         3.4707         3.4707         3.4707         EPS         
+133         3.4924         3.4924         3.4924         EPS         
+134         3.5133         3.5133         3.5133         EPS         
+135         3.5333         3.5333         3.5333         EPS         
+136         3.5525         3.5525         3.5525         EPS         
+137         3.5708         3.5708         3.5708         EPS         
+138         3.5882         3.5882         3.5882         EPS         
+139         3.6048         3.6048         3.6048         EPS         
+140         3.6205         3.6205         3.6205         EPS         
+141         3.6353         3.6353         3.6353         EPS         
+142         3.6493         3.6493         3.6493         EPS         
+143         3.6624         3.6624         3.6624         EPS         
+144         3.6747         3.6747         3.6747         EPS         
+145         3.6861         3.6861         3.6861         EPS         
+146         3.6966         3.6966         3.6966         EPS         
+147         3.7064         3.7064         3.7064         EPS         
+148         3.7152         3.7152         3.7152         EPS         
+149         3.7233         3.7233         3.7233         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 22
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+---- EQU Y4_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+2         103.2400       103.2400       103.2400         EPS         
+3         103.2272       103.2272       103.2272         EPS         
+4         103.2144       103.2144       103.2144         EPS         
+5         103.2015       103.2015       103.2015         EPS         
+6         103.1887       103.1887       103.1887         EPS         
+7         103.1759       103.1759       103.1759         EPS         
+8         103.1631       103.1631       103.1631         EPS         
+9         103.1502       103.1502       103.1502         EPS         
+10        103.1374       103.1374       103.1374         EPS         
+11        103.1246       103.1246       103.1246         EPS         
+12        103.1118       103.1118       103.1118         EPS         
+13        103.0990       103.0990       103.0990         EPS         
+14        103.0861       103.0861       103.0861         EPS         
+15        103.0733       103.0733       103.0733         EPS         
+16        103.0605       103.0605       103.0605         EPS         
+17        103.0477       103.0477       103.0477         EPS         
+18        103.0349       103.0349       103.0349         EPS         
+19        103.0221       103.0221       103.0221         EPS         
+20        103.0093       103.0093       103.0093         EPS         
+21        102.9965       102.9965       102.9965         EPS         
+22        102.9838       102.9838       102.9838         EPS         
+23        102.9710       102.9710       102.9710         EPS         
+24        102.9582       102.9582       102.9582         EPS         
+25        102.9454       102.9454       102.9454         EPS         
+26        102.9326       102.9326       102.9326         EPS         
+27        102.9199       102.9199       102.9199         EPS         
+28        102.9071       102.9071       102.9071         EPS         
+29        102.8943       102.8943       102.8943         EPS         
+30        102.8815       102.8815       102.8815         EPS         
+31        102.8688       102.8688       102.8688         EPS         
+32        102.8560       102.8560       102.8560         EPS         
+33        102.8433       102.8433       102.8433         EPS         
+34        102.8305       102.8305       102.8305         EPS         
+35        102.8178       102.8178       102.8178         EPS         
+36        102.8276       102.8276       102.8276         EPS         
+37        102.8374       102.8374       102.8374         EPS         
+38        102.8472       102.8472       102.8472         EPS         
+39        102.8570       102.8570       102.8570         EPS         
+40        102.8668       102.8668       102.8668         EPS         
+41        102.8766       102.8766       102.8766         EPS         
+42        102.8864       102.8864       102.8864         EPS         
+43        102.8962       102.8962       102.8962         EPS         
+44        102.9059       102.9059       102.9059         EPS         
+45        102.9157       102.9157       102.9157         EPS         
+46        102.9255       102.9255       102.9255         EPS         
+47        102.9353       102.9353       102.9353         EPS         
+48        102.9450       102.9450       102.9450         EPS         
+49        102.9548       102.9548       102.9548         EPS         
+50        102.9645       102.9645       102.9645         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 23
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y4_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+51        102.9743       102.9743       102.9743         EPS         
+52        102.9840       102.9840       102.9840         EPS         
+53        102.9938       102.9938       102.9938         EPS         
+54        103.0035       103.0035       103.0035         EPS         
+55        103.0132       103.0132       103.0132         EPS         
+56        103.0230       103.0230       103.0230         EPS         
+57        103.0327       103.0327       103.0327         EPS         
+58        103.0424       103.0424       103.0424         EPS         
+59        103.0521       103.0521       103.0521         EPS         
+60        103.0618       103.0618       103.0618         EPS         
+61        103.0715       103.0715       103.0715         EPS         
+62        103.0812       103.0812       103.0812         EPS         
+63        103.0909       103.0909       103.0909         EPS         
+64        103.1006       103.1006       103.1006         EPS         
+65        103.1103       103.1103       103.1103         EPS         
+66        103.1200       103.1200       103.1200         EPS         
+67        103.1297       103.1297       103.1297         EPS         
+68        103.1393       103.1393       103.1393         EPS         
+69        103.1490       103.1490       103.1490         EPS         
+70        103.1587       103.1587       103.1587         EPS         
+71        103.1683       103.1683       103.1683         EPS         
+72        103.1780       103.1780       103.1780         EPS         
+73        103.1876       103.1876       103.1876         EPS         
+74        103.1973       103.1973       103.1973         EPS         
+75        103.2069       103.2069       103.2069         EPS         
+76        103.2166       103.2166       103.2166         EPS         
+77        103.2262       103.2262       103.2262         EPS         
+78        103.2358       103.2358       103.2358         EPS         
+79        103.2454       103.2454       103.2454         EPS         
+80        103.2551       103.2551       103.2551         EPS         
+81        103.2647       103.2647       103.2647         EPS         
+82        103.2743       103.2743       103.2743         EPS         
+83        103.2839       103.2839       103.2839         EPS         
+84        103.2935       103.2935       103.2935         EPS         
+85        103.3031       103.3031       103.3031         EPS         
+86        103.3127       103.3127       103.3127         EPS         
+87        103.3223       103.3223       103.3223         EPS         
+88        103.3319       103.3319       103.3319         EPS         
+89        103.3415       103.3415       103.3415         EPS         
+90        103.3511       103.3511       103.3511         EPS         
+91        103.3606       103.3606       103.3606         EPS         
+92        103.3702       103.3702       103.3702         EPS         
+93        103.3798       103.3798       103.3798         EPS         
+94        103.3894       103.3894       103.3894         EPS         
+95        103.3989       103.3989       103.3989         EPS         
+96        103.4085       103.4085       103.4085         EPS         
+97        103.4181       103.4181       103.4181         EPS         
+98        103.4276       103.4276       103.4276         EPS         
+99        103.4372       103.4372       103.4372         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 24
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y4_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+100       103.4467       103.4467       103.4467         EPS         
+101       103.4563       103.4563       103.4563         EPS         
+102       103.4658       103.4658       103.4658         EPS         
+103       103.4754       103.4754       103.4754         EPS         
+104       103.4849       103.4849       103.4849         EPS         
+105       103.4945       103.4945       103.4945         EPS         
+106       103.5040       103.5040       103.5040         EPS         
+107       103.5135       103.5135       103.5135         EPS         
+108       103.5231       103.5231       103.5231         EPS         
+109       103.5326       103.5326       103.5326         EPS         
+110       103.5421       103.5421       103.5421         EPS         
+111       103.5517       103.5517       103.5517         EPS         
+112       103.5612       103.5612       103.5612         EPS         
+113       103.5707       103.5707       103.5707         EPS         
+114       103.5802       103.5802       103.5802         EPS         
+115       103.5898       103.5898       103.5898         EPS         
+116       103.5993       103.5993       103.5993         EPS         
+117       103.6088       103.6088       103.6088         EPS         
+118       103.6183       103.6183       103.6183         EPS         
+119       103.6278       103.6278       103.6278         EPS         
+120       103.6373       103.6373       103.6373         EPS         
+121       103.6469       103.6469       103.6469         EPS         
+122       103.6564       103.6564       103.6564         EPS         
+123       103.6659       103.6659       103.6659         EPS         
+124       103.6754       103.6754       103.6754         EPS         
+125       103.6849       103.6849       103.6849         EPS         
+126       103.6944       103.6944       103.6944         EPS         
+127       103.7039       103.7039       103.7039         EPS         
+128       103.7134       103.7134       103.7134         EPS         
+129       103.7229       103.7229       103.7229         EPS         
+130       103.7324       103.7324       103.7324         EPS         
+131       103.7420       103.7420       103.7420         EPS         
+132       103.7515       103.7515       103.7515         EPS         
+133       103.7610       103.7610       103.7610         EPS         
+134       103.7705       103.7705       103.7705         EPS         
+135       103.7800       103.7800       103.7800         EPS         
+136       103.7895       103.7895       103.7895         EPS         
+137       103.7990       103.7990       103.7990         EPS         
+138       103.8085       103.8085       103.8085         EPS         
+139       103.8180       103.8180       103.8180         EPS         
+140       103.8275       103.8275       103.8275         EPS         
+141       103.8370       103.8370       103.8370         EPS         
+142       103.8465       103.8465       103.8465         EPS         
+143       103.8560       103.8560       103.8560         EPS         
+144       103.8655       103.8655       103.8655         EPS         
+145       103.8750       103.8750       103.8750         EPS         
+146       103.8845       103.8845       103.8845         EPS         
+147       103.8940       103.8940       103.8940         EPS         
+148       103.9035       103.9035       103.9035         EPS         
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 25
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     EQU Y4_Mult_Model  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+149       103.9130       103.9130       103.9130         EPS         
+
+---- EQU Quality_eqn  
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+1        -2.9251        -2.9251        -2.9251         EPS         
+2         2.6791         2.6791         2.6791         EPS         
+3       -11.2883       -11.2883       -11.2883         EPS         
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU Objective        301.2867       301.2867       301.2867         1.0000      
+
+---- VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+2  .1        -INF          298.0079        +INF             .          
+2  .2        -INF            1.1273        +INF             .          
+2  .3        -INF            0.6772        +INF             .          
+2  .4        -INF          103.2400        +INF             .          
+3  .1        -INF          298.0099        +INF             .          
+3  .2        -INF            1.1294        +INF             .          
+3  .3        -INF            0.6869        +INF             .          
+3  .4        -INF          103.2272        +INF             .          
+4  .1        -INF          298.0116        +INF             .          
+4  .2        -INF            1.1315        +INF             .          
+4  .3        -INF            0.6958        +INF             .          
+4  .4        -INF          103.2144        +INF             .          
+5  .1        -INF          298.0132        +INF             .          
+5  .2        -INF            1.1336        +INF             .          
+5  .3        -INF            0.7039        +INF             .          
+5  .4        -INF          103.2015        +INF             .          
+6  .1        -INF          298.0145        +INF             .          
+6  .2        -INF            1.1358        +INF             .          
+6  .3        -INF            0.7112        +INF             .          
+6  .4        -INF          103.1887        +INF             .          
+7  .1        -INF          298.0156        +INF             .          
+7  .2        -INF            1.1379        +INF             .          
+7  .3        -INF            0.7176        +INF             .          
+7  .4        -INF          103.1759        +INF             .          
+8  .1        -INF          298.0165        +INF             .          
+8  .2        -INF            1.1401        +INF             .          
+8  .3        -INF            0.7233        +INF             .          
+8  .4        -INF          103.1631        +INF             .          
+9  .1        -INF          298.0172        +INF             .          
+9  .2        -INF            1.1422        +INF             .          
+9  .3        -INF            0.7281        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 26
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+9  .4        -INF          103.1502        +INF             .          
+10 .1        -INF          298.0177        +INF             .          
+10 .2        -INF            1.1444        +INF             .          
+10 .3        -INF            0.7321        +INF             .          
+10 .4        -INF          103.1374        +INF             .          
+11 .1        -INF          298.0180        +INF             .          
+11 .2        -INF            1.1466        +INF             .          
+11 .3        -INF            0.7354        +INF             .          
+11 .4        -INF          103.1246        +INF             .          
+12 .1        -INF          298.0180        +INF             .          
+12 .2        -INF            1.1488        +INF             .          
+12 .3        -INF            0.7378        +INF             .          
+12 .4        -INF          103.1118        +INF             .          
+13 .1        -INF          298.0179        +INF             .          
+13 .2        -INF            1.1510        +INF             .          
+13 .3        -INF            0.7395        +INF             .          
+13 .4        -INF          103.0990        +INF             .          
+14 .1        -INF          298.0176        +INF             .          
+14 .2        -INF            1.1531        +INF             .          
+14 .3        -INF            0.7404        +INF             .          
+14 .4        -INF          103.0861        +INF             .          
+15 .1        -INF          298.0170        +INF             .          
+15 .2        -INF            1.1553        +INF             .          
+15 .3        -INF            0.7405        +INF             .          
+15 .4        -INF          103.0733        +INF             .          
+16 .1        -INF          298.0163        +INF             .          
+16 .2        -INF            1.1575        +INF             .          
+16 .3        -INF            0.7399        +INF             .          
+16 .4        -INF          103.0605        +INF             .          
+17 .1        -INF          298.0153        +INF             .          
+17 .2        -INF            1.1597        +INF             .          
+17 .3        -INF            0.7385        +INF             .          
+17 .4        -INF          103.0477        +INF             .          
+18 .1        -INF          298.0142        +INF             .          
+18 .2        -INF            1.1618        +INF             .          
+18 .3        -INF            0.7364        +INF             .          
+18 .4        -INF          103.0349        +INF             .          
+19 .1        -INF          298.0129        +INF             .          
+19 .2        -INF            1.1640        +INF             .          
+19 .3        -INF            0.7335        +INF             .          
+19 .4        -INF          103.0221        +INF             .          
+20 .1        -INF          298.0114        +INF             .          
+20 .2        -INF            1.1661        +INF             .          
+20 .3        -INF            0.7300        +INF             .          
+20 .4        -INF          103.0093        +INF             .          
+21 .1        -INF          298.0097        +INF             .          
+21 .2        -INF            1.1682        +INF             .          
+21 .3        -INF            0.7257        +INF             .          
+21 .4        -INF          102.9965        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 27
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+22 .1        -INF          298.0078        +INF             .          
+22 .2        -INF            1.1704        +INF             .          
+22 .3        -INF            0.7207        +INF             .          
+22 .4        -INF          102.9838        +INF             .          
+23 .1        -INF          298.0058        +INF             .          
+23 .2        -INF            1.1725        +INF             .          
+23 .3        -INF            0.7151        +INF             .          
+23 .4        -INF          102.9710        +INF             .          
+24 .1        -INF          298.0035        +INF             .          
+24 .2        -INF            1.1745        +INF             .          
+24 .3        -INF            0.7088        +INF             .          
+24 .4        -INF          102.9582        +INF             .          
+25 .1        -INF          298.0012        +INF             .          
+25 .2        -INF            1.1766        +INF             .          
+25 .3        -INF            0.7018        +INF             .          
+25 .4        -INF          102.9454        +INF             .          
+26 .1        -INF          297.9986        +INF             .          
+26 .2        -INF            1.1786        +INF             .          
+26 .3        -INF            0.6941        +INF             .          
+26 .4        -INF          102.9326        +INF             .          
+27 .1        -INF          297.9959        +INF             .          
+27 .2        -INF            1.1807        +INF             .          
+27 .3        -INF            0.6859        +INF             .          
+27 .4        -INF          102.9199        +INF             .          
+28 .1        -INF          297.9930        +INF             .          
+28 .2        -INF            1.1827        +INF             .          
+28 .3        -INF            0.6770        +INF             .          
+28 .4        -INF          102.9071        +INF             .          
+29 .1        -INF          297.9899        +INF             .          
+29 .2        -INF            1.1846        +INF             .          
+29 .3        -INF            0.6675        +INF             .          
+29 .4        -INF          102.8943        +INF             .          
+30 .1        -INF          297.9867        +INF             .          
+30 .2        -INF            1.1866        +INF             .          
+30 .3        -INF            0.6575        +INF             .          
+30 .4        -INF          102.8815        +INF             .          
+31 .1        -INF          297.9834        +INF             .          
+31 .2        -INF            1.1885        +INF             .          
+31 .3        -INF            0.6468        +INF             .          
+31 .4        -INF          102.8688        +INF             .          
+32 .1        -INF          297.9799        +INF             .          
+32 .2        -INF            1.1904        +INF             .          
+32 .3        -INF            0.6356        +INF             .          
+32 .4        -INF          102.8560        +INF             .          
+33 .1        -INF          297.9762        +INF             .          
+33 .2        -INF            1.1923        +INF             .          
+33 .3        -INF            0.6238        +INF             .          
+33 .4        -INF          102.8433        +INF             .          
+34 .1        -INF          297.9725        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 28
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+34 .2        -INF            1.1941        +INF             .          
+34 .3        -INF            0.6116        +INF             .          
+34 .4        -INF          102.8305        +INF             .          
+35 .1        -INF          297.9686        +INF             .          
+35 .2        -INF            1.1959        +INF             .          
+35 .3        -INF            0.5988        +INF             .          
+35 .4        -INF          102.8178        +INF             .          
+36 .1        -INF          297.9654        +INF             .          
+36 .2        -INF            1.1909        +INF             .          
+36 .3        -INF            0.5862        +INF             .          
+36 .4        -INF          102.8276        +INF             .          
+37 .1        -INF          297.9627        +INF             .          
+37 .2        -INF            1.1858        +INF             .          
+37 .3        -INF            0.5756        +INF             .          
+37 .4        -INF          102.8374        +INF             .          
+38 .1        -INF          297.9604        +INF             .          
+38 .2        -INF            1.1807        +INF             .          
+38 .3        -INF            0.5668        +INF             .          
+38 .4        -INF          102.8472        +INF             .          
+39 .1        -INF          297.9587        +INF             .          
+39 .2        -INF            1.1756        +INF             .          
+39 .3        -INF            0.5598        +INF             .          
+39 .4        -INF          102.8570        +INF             .          
+40 .1        -INF          297.9574        +INF             .          
+40 .2        -INF            1.1706        +INF             .          
+40 .3        -INF            0.5547        +INF             .          
+40 .4        -INF          102.8668        +INF             .          
+41 .1        -INF          297.9566        +INF             .          
+41 .2        -INF            1.1655        +INF             .          
+41 .3        -INF            0.5514        +INF             .          
+41 .4        -INF          102.8766        +INF             .          
+42 .1        -INF          297.9562        +INF             .          
+42 .2        -INF            1.1605        +INF             .          
+42 .3        -INF            0.5499        +INF             .          
+42 .4        -INF          102.8864        +INF             .          
+43 .1        -INF          297.9563        +INF             .          
+43 .2        -INF            1.1555        +INF             .          
+43 .3        -INF            0.5501        +INF             .          
+43 .4        -INF          102.8962        +INF             .          
+44 .1        -INF          297.9569        +INF             .          
+44 .2        -INF            1.1505        +INF             .          
+44 .3        -INF            0.5520        +INF             .          
+44 .4        -INF          102.9059        +INF             .          
+45 .1        -INF          297.9578        +INF             .          
+45 .2        -INF            1.1455        +INF             .          
+45 .3        -INF            0.5557        +INF             .          
+45 .4        -INF          102.9157        +INF             .          
+46 .1        -INF          297.9592        +INF             .          
+46 .2        -INF            1.1406        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 29
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+46 .3        -INF            0.5610        +INF             .          
+46 .4        -INF          102.9255        +INF             .          
+47 .1        -INF          297.9611        +INF             .          
+47 .2        -INF            1.1356        +INF             .          
+47 .3        -INF            0.5680        +INF             .          
+47 .4        -INF          102.9353        +INF             .          
+48 .1        -INF          297.9633        +INF             .          
+48 .2        -INF            1.1308        +INF             .          
+48 .3        -INF            0.5767        +INF             .          
+48 .4        -INF          102.9450        +INF             .          
+49 .1        -INF          297.9660        +INF             .          
+49 .2        -INF            1.1259        +INF             .          
+49 .3        -INF            0.5869        +INF             .          
+49 .4        -INF          102.9548        +INF             .          
+50 .1        -INF          297.9690        +INF             .          
+50 .2        -INF            1.1212        +INF             .          
+50 .3        -INF            0.5987        +INF             .          
+50 .4        -INF          102.9645        +INF             .          
+51 .1        -INF          297.9725        +INF             .          
+51 .2        -INF            1.1164        +INF             .          
+51 .3        -INF            0.6120        +INF             .          
+51 .4        -INF          102.9743        +INF             .          
+52 .1        -INF          297.9763        +INF             .          
+52 .2        -INF            1.1117        +INF             .          
+52 .3        -INF            0.6269        +INF             .          
+52 .4        -INF          102.9840        +INF             .          
+53 .1        -INF          297.9805        +INF             .          
+53 .2        -INF            1.1071        +INF             .          
+53 .3        -INF            0.6432        +INF             .          
+53 .4        -INF          102.9938        +INF             .          
+54 .1        -INF          297.9851        +INF             .          
+54 .2        -INF            1.1025        +INF             .          
+54 .3        -INF            0.6610        +INF             .          
+54 .4        -INF          103.0035        +INF             .          
+55 .1        -INF          297.9900        +INF             .          
+55 .2        -INF            1.0980        +INF             .          
+55 .3        -INF            0.6802        +INF             .          
+55 .4        -INF          103.0132        +INF             .          
+56 .1        -INF          297.9953        +INF             .          
+56 .2        -INF            1.0935        +INF             .          
+56 .3        -INF            0.7007        +INF             .          
+56 .4        -INF          103.0230        +INF             .          
+57 .1        -INF          298.0009        +INF             .          
+57 .2        -INF            1.0891        +INF             .          
+57 .3        -INF            0.7226        +INF             .          
+57 .4        -INF          103.0327        +INF             .          
+58 .1        -INF          298.0069        +INF             .          
+58 .2        -INF            1.0848        +INF             .          
+58 .3        -INF            0.7458        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 30
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+58 .4        -INF          103.0424        +INF             .          
+59 .1        -INF          298.0132        +INF             .          
+59 .2        -INF            1.0806        +INF             .          
+59 .3        -INF            0.7702        +INF             .          
+59 .4        -INF          103.0521        +INF             .          
+60 .1        -INF          298.0198        +INF             .          
+60 .2        -INF            1.0764        +INF             .          
+60 .3        -INF            0.7959        +INF             .          
+60 .4        -INF          103.0618        +INF             .          
+61 .1        -INF          298.0267        +INF             .          
+61 .2        -INF            1.0723        +INF             .          
+61 .3        -INF            0.8228        +INF             .          
+61 .4        -INF          103.0715        +INF             .          
+62 .1        -INF          298.0338        +INF             .          
+62 .2        -INF            1.0682        +INF             .          
+62 .3        -INF            0.8508        +INF             .          
+62 .4        -INF          103.0812        +INF             .          
+63 .1        -INF          298.0413        +INF             .          
+63 .2        -INF            1.0643        +INF             .          
+63 .3        -INF            0.8800        +INF             .          
+63 .4        -INF          103.0909        +INF             .          
+64 .1        -INF          298.0491        +INF             .          
+64 .2        -INF            1.0604        +INF             .          
+64 .3        -INF            0.9102        +INF             .          
+64 .4        -INF          103.1006        +INF             .          
+65 .1        -INF          298.0571        +INF             .          
+65 .2        -INF            1.0566        +INF             .          
+65 .3        -INF            0.9414        +INF             .          
+65 .4        -INF          103.1103        +INF             .          
+66 .1        -INF          298.0653        +INF             .          
+66 .2        -INF            1.0529        +INF             .          
+66 .3        -INF            0.9737        +INF             .          
+66 .4        -INF          103.1200        +INF             .          
+67 .1        -INF          298.0738        +INF             .          
+67 .2        -INF            1.0493        +INF             .          
+67 .3        -INF            1.0069        +INF             .          
+67 .4        -INF          103.1297        +INF             .          
+68 .1        -INF          298.0825        +INF             .          
+68 .2        -INF            1.0458        +INF             .          
+68 .3        -INF            1.0411        +INF             .          
+68 .4        -INF          103.1393        +INF             .          
+69 .1        -INF          298.0915        +INF             .          
+69 .2        -INF            1.0424        +INF             .          
+69 .3        -INF            1.0761        +INF             .          
+69 .4        -INF          103.1490        +INF             .          
+70 .1        -INF          298.1006        +INF             .          
+70 .2        -INF            1.0390        +INF             .          
+70 .3        -INF            1.1120        +INF             .          
+70 .4        -INF          103.1587        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 31
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+71 .1        -INF          298.1100        +INF             .          
+71 .2        -INF            1.0358        +INF             .          
+71 .3        -INF            1.1486        +INF             .          
+71 .4        -INF          103.1683        +INF             .          
+72 .1        -INF          298.1195        +INF             .          
+72 .2        -INF            1.0326        +INF             .          
+72 .3        -INF            1.1860        +INF             .          
+72 .4        -INF          103.1780        +INF             .          
+73 .1        -INF          298.1293        +INF             .          
+73 .2        -INF            1.0295        +INF             .          
+73 .3        -INF            1.2242        +INF             .          
+73 .4        -INF          103.1876        +INF             .          
+74 .1        -INF          298.1392        +INF             .          
+74 .2        -INF            1.0266        +INF             .          
+74 .3        -INF            1.2630        +INF             .          
+74 .4        -INF          103.1973        +INF             .          
+75 .1        -INF          298.1492        +INF             .          
+75 .2        -INF            1.0237        +INF             .          
+75 .3        -INF            1.3025        +INF             .          
+75 .4        -INF          103.2069        +INF             .          
+76 .1        -INF          298.1594        +INF             .          
+76 .2        -INF            1.0210        +INF             .          
+76 .3        -INF            1.3425        +INF             .          
+76 .4        -INF          103.2166        +INF             .          
+77 .1        -INF          298.1698        +INF             .          
+77 .2        -INF            1.0183        +INF             .          
+77 .3        -INF            1.3831        +INF             .          
+77 .4        -INF          103.2262        +INF             .          
+78 .1        -INF          298.1802        +INF             .          
+78 .2        -INF            1.0157        +INF             .          
+78 .3        -INF            1.4243        +INF             .          
+78 .4        -INF          103.2358        +INF             .          
+79 .1        -INF          298.1908        +INF             .          
+79 .2        -INF            1.0133        +INF             .          
+79 .3        -INF            1.4659        +INF             .          
+79 .4        -INF          103.2454        +INF             .          
+80 .1        -INF          298.2015        +INF             .          
+80 .2        -INF            1.0109        +INF             .          
+80 .3        -INF            1.5080        +INF             .          
+80 .4        -INF          103.2551        +INF             .          
+81 .1        -INF          298.2123        +INF             .          
+81 .2        -INF            1.0086        +INF             .          
+81 .3        -INF            1.5504        +INF             .          
+81 .4        -INF          103.2647        +INF             .          
+82 .1        -INF          298.2232        +INF             .          
+82 .2        -INF            1.0065        +INF             .          
+82 .3        -INF            1.5932        +INF             .          
+82 .4        -INF          103.2743        +INF             .          
+83 .1        -INF          298.2341        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 32
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+83 .2        -INF            1.0044        +INF             .          
+83 .3        -INF            1.6364        +INF             .          
+83 .4        -INF          103.2839        +INF             .          
+84 .1        -INF          298.2452        +INF             .          
+84 .2        -INF            1.0025        +INF             .          
+84 .3        -INF            1.6798        +INF             .          
+84 .4        -INF          103.2935        +INF             .          
+85 .1        -INF          298.2562        +INF             .          
+85 .2        -INF            1.0006        +INF             .          
+85 .3        -INF            1.7235        +INF             .          
+85 .4        -INF          103.3031        +INF             .          
+86 .1        -INF          298.2674        +INF             .          
+86 .2        -INF            0.9989        +INF             .          
+86 .3        -INF            1.7673        +INF             .          
+86 .4        -INF          103.3127        +INF             .          
+87 .1        -INF          298.2785        +INF             .          
+87 .2        -INF            0.9972        +INF             .          
+87 .3        -INF            1.8114        +INF             .          
+87 .4        -INF          103.3223        +INF             .          
+88 .1        -INF          298.2897        +INF             .          
+88 .2        -INF            0.9957        +INF             .          
+88 .3        -INF            1.8555        +INF             .          
+88 .4        -INF          103.3319        +INF             .          
+89 .1        -INF          298.3009        +INF             .          
+89 .2        -INF            0.9942        +INF             .          
+89 .3        -INF            1.8998        +INF             .          
+89 .4        -INF          103.3415        +INF             .          
+90 .1        -INF          298.3122        +INF             .          
+90 .2        -INF            0.9929        +INF             .          
+90 .3        -INF            1.9441        +INF             .          
+90 .4        -INF          103.3511        +INF             .          
+91 .1        -INF          298.3234        +INF             .          
+91 .2        -INF            0.9917        +INF             .          
+91 .3        -INF            1.9885        +INF             .          
+91 .4        -INF          103.3606        +INF             .          
+92 .1        -INF          298.3346        +INF             .          
+92 .2        -INF            0.9905        +INF             .          
+92 .3        -INF            2.0328        +INF             .          
+92 .4        -INF          103.3702        +INF             .          
+93 .1        -INF          298.3458        +INF             .          
+93 .2        -INF            0.9895        +INF             .          
+93 .3        -INF            2.0771        +INF             .          
+93 .4        -INF          103.3798        +INF             .          
+94 .1        -INF          298.3570        +INF             .          
+94 .2        -INF            0.9886        +INF             .          
+94 .3        -INF            2.1213        +INF             .          
+94 .4        -INF          103.3894        +INF             .          
+95 .1        -INF          298.3681        +INF             .          
+95 .2        -INF            0.9877        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 33
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+95 .3        -INF            2.1654        +INF             .          
+95 .4        -INF          103.3989        +INF             .          
+96 .1        -INF          298.3792        +INF             .          
+96 .2        -INF            0.9870        +INF             .          
+96 .3        -INF            2.2094        +INF             .          
+96 .4        -INF          103.4085        +INF             .          
+97 .1        -INF          298.3903        +INF             .          
+97 .2        -INF            0.9863        +INF             .          
+97 .3        -INF            2.2531        +INF             .          
+97 .4        -INF          103.4181        +INF             .          
+98 .1        -INF          298.4013        +INF             .          
+98 .2        -INF            0.9858        +INF             .          
+98 .3        -INF            2.2967        +INF             .          
+98 .4        -INF          103.4276        +INF             .          
+99 .1        -INF          298.4122        +INF             .          
+99 .2        -INF            0.9853        +INF             .          
+99 .3        -INF            2.3400        +INF             .          
+99 .4        -INF          103.4372        +INF             .          
+100.1        -INF          298.4230        +INF             .          
+100.2        -INF            0.9850        +INF             .          
+100.3        -INF            2.3830        +INF             .          
+100.4        -INF          103.4467        +INF             .          
+101.1        -INF          298.4338        +INF             .          
+101.2        -INF            0.9847        +INF             .          
+101.3        -INF            2.4257        +INF             .          
+101.4        -INF          103.4563        +INF             .          
+102.1        -INF          298.4445        +INF             .          
+102.2        -INF            0.9846        +INF             .          
+102.3        -INF            2.4681        +INF             .          
+102.4        -INF          103.4658        +INF             .          
+103.1        -INF          298.4551        +INF             .          
+103.2        -INF            0.9845        +INF             .          
+103.3        -INF            2.5102        +INF             .          
+103.4        -INF          103.4754        +INF             .          
+104.1        -INF          298.4655        +INF             .          
+104.2        -INF            0.9845        +INF             .          
+104.3        -INF            2.5518        +INF             .          
+104.4        -INF          103.4849        +INF             .          
+105.1        -INF          298.4759        +INF             .          
+105.2        -INF            0.9846        +INF             .          
+105.3        -INF            2.5930        +INF             .          
+105.4        -INF          103.4945        +INF             .          
+106.1        -INF          298.4862        +INF             .          
+106.2        -INF            0.9848        +INF             .          
+106.3        -INF            2.6338        +INF             .          
+106.4        -INF          103.5040        +INF             .          
+107.1        -INF          298.4963        +INF             .          
+107.2        -INF            0.9851        +INF             .          
+107.3        -INF            2.6741        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 34
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+107.4        -INF          103.5135        +INF             .          
+108.1        -INF          298.5063        +INF             .          
+108.2        -INF            0.9854        +INF             .          
+108.3        -INF            2.7139        +INF             .          
+108.4        -INF          103.5231        +INF             .          
+109.1        -INF          298.5162        +INF             .          
+109.2        -INF            0.9859        +INF             .          
+109.3        -INF            2.7532        +INF             .          
+109.4        -INF          103.5326        +INF             .          
+110.1        -INF          298.5259        +INF             .          
+110.2        -INF            0.9864        +INF             .          
+110.3        -INF            2.7920        +INF             .          
+110.4        -INF          103.5421        +INF             .          
+111.1        -INF          298.5354        +INF             .          
+111.2        -INF            0.9870        +INF             .          
+111.3        -INF            2.8302        +INF             .          
+111.4        -INF          103.5517        +INF             .          
+112.1        -INF          298.5449        +INF             .          
+112.2        -INF            0.9876        +INF             .          
+112.3        -INF            2.8678        +INF             .          
+112.4        -INF          103.5612        +INF             .          
+113.1        -INF          298.5541        +INF             .          
+113.2        -INF            0.9884        +INF             .          
+113.3        -INF            2.9048        +INF             .          
+113.4        -INF          103.5707        +INF             .          
+114.1        -INF          298.5632        +INF             .          
+114.2        -INF            0.9892        +INF             .          
+114.3        -INF            2.9412        +INF             .          
+114.4        -INF          103.5802        +INF             .          
+115.1        -INF          298.5722        +INF             .          
+115.2        -INF            0.9901        +INF             .          
+115.3        -INF            2.9769        +INF             .          
+115.4        -INF          103.5898        +INF             .          
+116.1        -INF          298.5809        +INF             .          
+116.2        -INF            0.9911        +INF             .          
+116.3        -INF            3.0119        +INF             .          
+116.4        -INF          103.5993        +INF             .          
+117.1        -INF          298.5895        +INF             .          
+117.2        -INF            0.9921        +INF             .          
+117.3        -INF            3.0463        +INF             .          
+117.4        -INF          103.6088        +INF             .          
+118.1        -INF          298.5979        +INF             .          
+118.2        -INF            0.9932        +INF             .          
+118.3        -INF            3.0800        +INF             .          
+118.4        -INF          103.6183        +INF             .          
+119.1        -INF          298.6061        +INF             .          
+119.2        -INF            0.9944        +INF             .          
+119.3        -INF            3.1130        +INF             .          
+119.4        -INF          103.6278        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 35
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+120.1        -INF          298.6142        +INF             .          
+120.2        -INF            0.9956        +INF             .          
+120.3        -INF            3.1452        +INF             .          
+120.4        -INF          103.6373        +INF             .          
+121.1        -INF          298.6220        +INF             .          
+121.2        -INF            0.9969        +INF             .          
+121.3        -INF            3.1767        +INF             .          
+121.4        -INF          103.6469        +INF             .          
+122.1        -INF          298.6297        +INF             .          
+122.2        -INF            0.9983        +INF             .          
+122.3        -INF            3.2074        +INF             .          
+122.4        -INF          103.6564        +INF             .          
+123.1        -INF          298.6371        +INF             .          
+123.2        -INF            0.9997        +INF             .          
+123.3        -INF            3.2374        +INF             .          
+123.4        -INF          103.6659        +INF             .          
+124.1        -INF          298.6443        +INF             .          
+124.2        -INF            1.0011        +INF             .          
+124.3        -INF            3.2666        +INF             .          
+124.4        -INF          103.6754        +INF             .          
+125.1        -INF          298.6514        +INF             .          
+125.2        -INF            1.0026        +INF             .          
+125.3        -INF            3.2950        +INF             .          
+125.4        -INF          103.6849        +INF             .          
+126.1        -INF          298.6582        +INF             .          
+126.2        -INF            1.0042        +INF             .          
+126.3        -INF            3.3225        +INF             .          
+126.4        -INF          103.6944        +INF             .          
+127.1        -INF          298.6649        +INF             .          
+127.2        -INF            1.0058        +INF             .          
+127.3        -INF            3.3493        +INF             .          
+127.4        -INF          103.7039        +INF             .          
+128.1        -INF          298.6713        +INF             .          
+128.2        -INF            1.0075        +INF             .          
+128.3        -INF            3.3753        +INF             .          
+128.4        -INF          103.7134        +INF             .          
+129.1        -INF          298.6775        +INF             .          
+129.2        -INF            1.0092        +INF             .          
+129.3        -INF            3.4004        +INF             .          
+129.4        -INF          103.7229        +INF             .          
+130.1        -INF          298.6835        +INF             .          
+130.2        -INF            1.0109        +INF             .          
+130.3        -INF            3.4247        +INF             .          
+130.4        -INF          103.7324        +INF             .          
+131.1        -INF          298.6893        +INF             .          
+131.2        -INF            1.0127        +INF             .          
+131.3        -INF            3.4481        +INF             .          
+131.4        -INF          103.7420        +INF             .          
+132.1        -INF          298.6948        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 36
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+132.2        -INF            1.0145        +INF             .          
+132.3        -INF            3.4707        +INF             .          
+132.4        -INF          103.7515        +INF             .          
+133.1        -INF          298.7002        +INF             .          
+133.2        -INF            1.0164        +INF             .          
+133.3        -INF            3.4924        +INF             .          
+133.4        -INF          103.7610        +INF             .          
+134.1        -INF          298.7053        +INF             .          
+134.2        -INF            1.0182        +INF             .          
+134.3        -INF            3.5133        +INF             .          
+134.4        -INF          103.7705        +INF             .          
+135.1        -INF          298.7102        +INF             .          
+135.2        -INF            1.0202        +INF             .          
+135.3        -INF            3.5333        +INF             .          
+135.4        -INF          103.7800        +INF             .          
+136.1        -INF          298.7149        +INF             .          
+136.2        -INF            1.0221        +INF             .          
+136.3        -INF            3.5525        +INF             .          
+136.4        -INF          103.7895        +INF             .          
+137.1        -INF          298.7194        +INF             .          
+137.2        -INF            1.0241        +INF             .          
+137.3        -INF            3.5708        +INF             .          
+137.4        -INF          103.7990        +INF             .          
+138.1        -INF          298.7236        +INF             .          
+138.2        -INF            1.0261        +INF             .          
+138.3        -INF            3.5882        +INF             .          
+138.4        -INF          103.8085        +INF             .          
+139.1        -INF          298.7276        +INF             .          
+139.2        -INF            1.0281        +INF             .          
+139.3        -INF            3.6048        +INF             .          
+139.4        -INF          103.8180        +INF             .          
+140.1        -INF          298.7314        +INF             .          
+140.2        -INF            1.0302        +INF             .          
+140.3        -INF            3.6205        +INF             .          
+140.4        -INF          103.8275        +INF             .          
+141.1        -INF          298.7350        +INF             .          
+141.2        -INF            1.0322        +INF             .          
+141.3        -INF            3.6353        +INF             .          
+141.4        -INF          103.8370        +INF             .          
+142.1        -INF          298.7384        +INF             .          
+142.2        -INF            1.0343        +INF             .          
+142.3        -INF            3.6493        +INF             .          
+142.4        -INF          103.8465        +INF             .          
+143.1        -INF          298.7416        +INF             .          
+143.2        -INF            1.0364        +INF             .          
+143.3        -INF            3.6624        +INF             .          
+143.4        -INF          103.8560        +INF             .          
+144.1        -INF          298.7445        +INF             .          
+144.2        -INF            1.0385        +INF             .          
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 37
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 169
+
+
+     VAR X  All trajectories measured by the dynamic model and used by the quality model
+
+             LOWER          LEVEL          UPPER         MARGINAL
+
+144.3        -INF            3.6747        +INF             .          
+144.4        -INF          103.8655        +INF             .          
+145.1        -INF          298.7473        +INF             .          
+145.2        -INF            1.0406        +INF             .          
+145.3        -INF            3.6861        +INF             .          
+145.4        -INF          103.8750        +INF             .          
+146.1        -INF          298.7498        +INF             .          
+146.2        -INF            1.0428        +INF             .          
+146.3        -INF            3.6966        +INF             .          
+146.4        -INF          103.8845        +INF             .          
+147.1        -INF          298.7521        +INF             .          
+147.2        -INF            1.0449        +INF             .          
+147.3        -INF            3.7064        +INF             .          
+147.4        -INF          103.8940        +INF             .          
+148.1        -INF          298.7542        +INF             .          
+148.2        -INF            1.0471        +INF             .          
+148.3        -INF            3.7152        +INF             .          
+148.4        -INF          103.9035        +INF             .          
+149.1        -INF          298.7561        +INF             .          
+149.2        -INF            1.0492        +INF             .          
+149.3        -INF            3.7233        +INF             .          
+149.4        -INF          103.9130        +INF             .          
+
+---- VAR Quality  qualities
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+1        -INF           -2.9251        +INF             .          
+2        -INF            2.6791        +INF             .          
+3        -INF          -11.2883        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR JMPC              -INF          301.2867        +INF             .          
+
+  JMPC  MPC objecive
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS Rev 240  WIN-VS8 24.0.2 x86/MS Windows                                                                                                                                                                                           04/02/14 10:43:07 Page 38
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+EXECUTION TIME       =        0.140 SECONDS      3 Mb  WIN240-240 Feb 14, 2013
+
+
+USER: Chemical Engineering                           G120713:0528AN-WIN
+      McMaster University                                        DC1678
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      D:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM1.gms
+Output     D:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM1.lst

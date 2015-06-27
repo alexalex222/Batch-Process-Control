@@ -1,0 +1,192 @@
+
+--- Job QBMPC_Pen.gms Start 04/08/14 21:00:27 WEX-WEI 24.0.2 x86_64/MS Windows     
+GAMS Rev 240  Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- QBMPC_Pen.gms(18) 2 Mb
+--- GDXin=E:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- QBMPC_Pen.gms(22) 3 Mb 1 Error
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(26) 3 Mb 2 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(27) 3 Mb 3 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(54) 3 Mb
+--- GDXin=E:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- QBMPC_Pen.gms(56) 3 Mb 4 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(57) 3 Mb 5 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(58) 3 Mb 6 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(59) 3 Mb 7 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(60) 3 Mb 8 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(61) 3 Mb 9 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(62) 3 Mb 10 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(63) 3 Mb 11 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(64) 3 Mb 12 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(65) 3 Mb 13 Errors
+*** Error 495 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Load dimension are different
+--- QBMPC_Pen.gms(66) 3 Mb 14 Errors
+*** Error 495 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Load dimension are different
+--- QBMPC_Pen.gms(69) 3 Mb 15 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol not in GDX
+--- QBMPC_Pen.gms(117) 3 Mb 19 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(118) 3 Mb 21 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(119) 3 Mb 25 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(121) 3 Mb 29 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(122) 3 Mb 34 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen.gms(123) 3 Mb 38 Errors
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen.gms(125) 3 Mb 41 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(126) 3 Mb 44 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(129) 3 Mb 47 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(130) 3 Mb 50 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(133) 3 Mb 53 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(134) 3 Mb 56 Errors
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+*** Error 352 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Set has not been initialized
+--- QBMPC_Pen.gms(151) 3 Mb 57 Errors
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen.gms(152) 3 Mb 59 Errors
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen.gms(153) 3 Mb 60 Errors
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen.gms(213) 3 Mb 61 Errors
+*** Error 257 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+    Solve statement not checked because of previous errors
+--- QBMPC_Pen.gms(215) 3 Mb 61 Errors
+*** Status: Compilation error(s)
+--- Job QBMPC_Pen.gms Stop 04/08/14 21:00:27 elapsed 0:00:00.104
+Exit code = 2

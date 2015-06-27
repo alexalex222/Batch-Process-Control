@@ -1,0 +1,253 @@
+GAMS Rev 240  WEX-WEI 24.0.2 x86_64/MS Windows          04/06/14 08:18:15 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   2  OPTION LIMROW=10
+   3  OPTION LIMCOL=10
+   4   
+   5  SETS
+   6  T 'time steps to end of batch'
+   7  M 'measured variables from mult-model'
+   8  P 'variables predicted using mult-model'
+   9  L 'lags in the ARX model'
+  10  Q 'qualities'
+  11  max_min 'maximum or minimum for constraint'
+  12  U 'inputs (set used only for constraints)'
+  13  PC 'number of principal components in quality model' ,
+  14  PD 'past data used in SPE calculations for quality model';
+  15   
+  16   
+  17   
+GDXIN   E:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- LOAD  T = 1:T
+--- LOAD  M = 2:M
+--- LOAD  P = 3:P
+--- LOAD  L = 4:L
+--- LOAD  Q = 5:Q
+--- LOAD  max_min = 6:max_min
+--- LOAD  U = 7:U
+  26  $load PC
+****         $492
+  27  $load PD
+****         $492
+  29   
+  30   
+  31  alias(M, M1);
+  32   
+  33  PARAMETERS
+  34  data(T, M)
+  35  Coeff_ARX(M,P,L)
+  36  qual_coeffs(M, Q, T)
+  37  q_meas_mean(T,M)
+  38  q_meas_std(T,M)
+  39  q_pred_mean(Q)
+  40  q_pred_std(Q)
+  41  contrib_past(Q)
+  42  qual_set(Q)
+  43  input_const(U, max_min)
+  44  ;
+  45   
+GDXIN   E:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- LOAD  data = 1:data
+--- LOAD  Coeff_ARX = 2:Coeff_ARX
+  49  $load qual_coeffs
+****                  $492
+  50  $load q_meas_mean
+****                  $492
+  51  $load q_meas_std
+****                 $492
+  52  $load q_pred_mean
+****                  $492
+  53  $load q_pred_std
+****                 $492
+  54  $load contrib_past
+****                   $492
+--- LOAD  qual_set = 4:qual_set
+--- LOAD  input_const = 5:input_const
+  57   
+  59   
+  60   
+  61  VARIABLES
+  62  X(T,M) 'All trajectories measured by the dynamic model and used by the qua
+      lity model'
+  63  Y(T,P) 'Measurements'
+  64  Quality(Q) 'qualities'
+  65  JMPC 'MPC objecive'
+  66  Dummy
+  67   
+  68   
+  69  ;
+  70   
+  71  * Initialize variables
+  72  X.l(T,M) = data(T,M);
+  73   
+  74  * fix the values corresponding to curent batch condition (ie current state
+       and output)
+  75  x.fx('1','1') = data('1', '1');
+  76   
+  77  x.fx('1','2') = data('1', '2');
+  78   
+  79  x.fx('1','3') = data('1', '3');
+  80   
+  81  x.fx('1','4') = data('1', '4');
+  82   
+  83  x.fx('2','1') = data('2', '1');
+  84   
+  85  x.fx('2','2') = data('2', '2');
+  86   
+  87  x.fx('2','3') = data('2', '3');
+  88   
+  89  x.fx('2','4') = data('2', '4');
+  90   
+  91   
+  92  loop (T,
+  93      x.lo(T, '5') = input_const('1', '1');
+  94      x.up(T, '5') = input_const('1', '2');
+  95   
+  96      x.lo(T, '6') = input_const('2', '1');
+  97      x.up(T, '6') = input_const('2', '2');
+  98   
+  99      x.lo(T, '7') = input_const('3', '1');
+ 100      x.up(T, '7') = input_const('3', '2');
+ 101  );
+ 102   
+ 103   
+ 104   
+ 105   
+ 106  loop ( T $(ord(T)>2),
+ 107   
+ 108      x.l(T,'1') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '1', '1')) + sum(M, x.l(T
+      -2,M)*Coeff_ARX(M, '1', '2'));
+ 109   
+ 110      x.l(T,'2') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '2', '1')) + sum(M, x.l(T
+      -2,M)*Coeff_ARX(M, '2', '2'));
+ 111   
+ 112      x.l(T,'3') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '3', '1')) + sum(M, x.l(T
+      -2,M)*Coeff_ARX(M, '3', '2'));
+ 113   
+ 114      x.l(T,'4') =  sum(M, x.l(T-1,M)*Coeff_ARX(M, '4', '1')) + sum(M, x.l(T
+      -2,M)*Coeff_ARX(M, '4', '2'));
+ 115   
+ 116  )
+ 117   
+ 118  loop (T,
+ 119   
+ 120     y.l(T,'1')= x.l(T,'1');
+ 121     y.l(T,'2')= x.l(T,'2');
+ 122     y.l(T,'3')= x.l(T,'3');
+ 123     y.l(T,'4')= x.l(T,'4');
+ 124  );
+ 125   
+ 126   
+ 127   
+ 128   
+ 129  loop (Q,
+ 130   
+ 131           Quality.l(Q) = (contrib_past(Q) + sum(T, sum(M,
+****                                      $141
+ 132                   (x.l(T,M)-q_meas_mean(T,M))/q_meas_std(T,M)
+****                                       $141             $141
+ 133                   *qual_coeffs(M, Q, T))));
+****                              $141
+ 134   
+ 135   
+ 136  );
+ 137   
+ 138   
+ 139   
+ 140  JMPC.l =sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - qual_set(Q)));
+ 141   
+ 142   
+ 143   
+ 144   
+ 145  EQUATIONS
+ 146   
+ 147   
+ 148  Y1_Mult_Model(T)
+ 149  Y2_Mult_Model(T)
+ 150  Y3_Mult_Model(T)
+ 151  Y4_Mult_Model(T)
+ 152   
+ 153  Quality_eqn(Q)
+ 154   
+ 155  Objective
+ 156  ;
+ 157   
+ 158   
+ 159   
+ 160  Y1_Mult_Model(T) $(ord(T)>2) .. x(T, '1') =e=  sum(M, x.l(T-1,M)*Coeff_ARX
+      (M, '1', '1')) + sum(M, x.l(T-2,M)*Coeff_ARX(M, '1', '2'));
+ 161   
+ 162  Y2_Mult_Model(T) $(ord(T)>2) .. x(T, '2') =e=  sum(M, x.l(T-1,M)*Coeff_ARX
+      (M, '2', '1')) + sum(M, x.l(T-2,M)*Coeff_ARX(M, '2', '2'));
+ 163   
+ 164  Y3_Mult_Model(T) $(ord(T)>2) .. x(T, '3') =e=  sum(M, x.l(T-1,M)*Coeff_ARX
+      (M, '3', '1')) + sum(M, x.l(T-2,M)*Coeff_ARX(M, '3', '2'));
+ 165   
+ 166  Y4_Mult_Model(T) $(ord(T)>2) .. x(T, '4') =e=  sum(M, x.l(T-1,M)*Coeff_ARX
+      (M, '4', '1')) + sum(M, x.l(T-2,M)*Coeff_ARX(M, '4', '2'));
+ 167   
+ 168  Quality_eqn(Q) .. Quality(Q) =e= (contrib_past(Q) + sum(T, sum(M,
+ 169                   (x.l(T,M)-q_meas_mean(T,M))/q_meas_std(T,M)
+ 170                   *qual_coeffs(M, Q, T))));
+ 171   
+ 172   
+ 173   
+ 174  Objective .. JMPC =e= sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - 
+      qual_set(Q)))
+ 175  + .000001*sum(T$(ord(T)>1), (x(T,'5') - 0.04)*(x(T,'5')-0.04)+(x(T,'6') - 
+      8)*(x(T,'6') - 8)+(x(T,'7') - 30)*(x(T,'7') - 30));
+ 176   
+ 177   
+ 178   
+ 179  MODEL QBMPC /all/;
+ 180   
+ 181  solve QBMPC using nlp minimizing JMPC;
+****                                       $257
+ 182   
+ 183  execute_unload 'matsol2.gdx', x, JMPC, Quality;
+
+**** LIST OF STRAY NAMES - CHECK DECLARATIONS FOR SPURIOUS COMMAS
+**** STRAY NAME PD OF TYPE SET  
+GAMS Rev 240  WEX-WEI 24.0.2 x86_64/MS Windows          04/06/14 08:18:15 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Error Messages
+
+
+141  Symbol neither initialized nor assigned
+        A wild shot: You may have spurious commas in the explanatory
+        text of a declaration. Check symbol reference list.
+257  Solve statement not checked because of previous errors
+492  Symbol not in GDX
+
+**** 13 ERROR(S)   0 WARNING(S)
+GAMS Rev 240  WEX-WEI 24.0.2 x86_64/MS Windows          04/06/14 08:18:15 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
+
+     1        1 INPUT          0       0  E:\OneDrive\Research\PenSim_SSM\QBMPC_
+                                          Pen_SSM.gms
+     2       18 GDXIN          1      18  E:\OneDrive\Research\PenSim_SSM\QBMPCv
+                                          2sets.gdx
+     3       46 GDXIN          1      46  E:\OneDrive\Research\PenSim_SSM\MPCini
+                                          tialize.gdx
+
+
+COMPILATION TIME     =        0.109 SECONDS      3 Mb  WEX240-240 Feb 14, 2013
+
+
+USER: Chemical Engineering                           G120713:0528AN-WIN
+      McMaster University                                        DC1678
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+Output     E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.lst
+
+**** USER ERROR(S) ENCOUNTERED

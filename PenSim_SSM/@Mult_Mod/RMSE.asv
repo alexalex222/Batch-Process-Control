@@ -1,0 +1,36 @@
+function [rmse] = RMSE(obj, varargin)
+
+%%%% Get data that was passed in %%%%
+
+if(strcmp(varargin{1},'struct'))
+    user_data = varargin{2};
+else
+    nvarpass = size(varargin,2)/2;
+    user_data = cell(size(obj.Types,2),1);
+    for n = 1:nvarpass
+        type = varargin{(n-1)*2+1};
+        typidx = getTypeIndex(obj, type);
+        user_data{typidx} = varargin{2*n};
+    end
+end
+
+%%%% Use the model to predict values to the end of the batch %%%%
+[predicted_values] = obj.Predict_Forward(max(max(obj.Lags))+1, ...
+    obj.nFE - max(max(obj.Lags)), 'struct', user_data);
+
+%%%% Calculate RMSE %%%%
+mod_error = cell(size(obj.Types,2),1);
+rmse = cell(size(obj.Types,2),1);
+
+for typidx= 1:size(obj.Types,2)
+   for i = 1:size(obj.Predicted{typidx},2)
+       varidx = obj.Predicted{typidx}(i);
+        mod_error{typidx}(varidx,:) = ...
+            user_data{typidx}(varidx,max(max(obj.Lags))+1:obj.nFE) - ...
+            predicted_values{typidx}(varidx,:);
+        rmse{typidx}(1,varidx) =...
+            sqrt(sum(mod_error{typidx}(varidx,:).*mod_error{typidx}(varidx,:))...
+            /size(mod_error{typidx}(varidx,:),2));
+   end
+end
+end

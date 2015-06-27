@@ -1,0 +1,51 @@
+
+--- Job QBMPC_Pen_SSM1.gms Start 04/02/14 10:07:33 WIN-VS8 24.0.2 x86/MS Windows        
+GAMS Rev 240  Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- QBMPC_Pen_SSM1.gms(18) 2 Mb
+--- GDXin=D:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- QBMPC_Pen_SSM1.gms(46) 3 Mb
+--- GDXin=D:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- QBMPC_Pen_SSM1.gms(171) 3 Mb
+--- Starting execution: elapsed 0:00:00.446
+--- QBMPC_Pen_SSM1.gms(133) 4 Mb
+--- Generating NLP model QBMPC
+--- QBMPC_Pen_SSM1.gms(169) 7 Mb
+---   780 rows  780 columns  780 non-zeroes
+---   0 nl-code  0 nl-non-zeroes
+--- QBMPC_Pen_SSM1.gms(169) 4 Mb
+--- Executing CONOPT: elapsed 0:00:00.521
+CONOPT 3         Feb 14, 2013 24.0.2 WIN 38380.38394 VS8 x86/MS Windows       
+ 
+ 
+    C O N O P T 3   version 3.15I
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ 
+   Iter Phase Ninf   Infeasibility   RGmax    NSB   Step InItr MX OK
+      0   0        0.0000000000E+00 (Input point)
+                                Pre-triangular equations:      780
+                                Post-triangular equations:       0
+      1   0        0.0000000000E+00 (After pre-processing)
+      2   0        0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    160.750603795
+ 
+   Iter Phase Ninf     Objective     RGmax    NSB   Step InItr MX OK
+      3   3        1.6075060379E+02 0.0E+00     0 0.0E+00    0 F  T
+      4   3        1.6075060379E+02 0.0E+00     0
+ 
+ ** Optimal solution. There are no superbasic variables.
+ 
+--- Restarting execution
+--- QBMPC_Pen_SSM1.gms(169) 0 Mb
+--- Reading solution for model QBMPC
+--- Executing after solve: elapsed 0:00:01.523
+--- QBMPC_Pen_SSM1.gms(171) 3 Mb
+*** Status: Normal completion
+--- Job QBMPC_Pen_SSM1.gms Stop 04/02/14 10:07:35 elapsed 0:00:01.598

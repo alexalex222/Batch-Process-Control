@@ -1,0 +1,20 @@
+B 2 C o m p i l a t i o n
+B 248 Include File Summary
+B 264 Equation Listing    SOLVE QBMPC Using NLP From line 217
+D 265 Dist_eqn
+D 376 Dist_Inv_eqn
+D 421 Membership_eqn
+D 476 Y1_Mult_Model
+D 613 Y2_Mult_Model
+D 757 Y3_Mult_Model
+D 895 Y4_Mult_Model
+D 1056 Quality_eqn
+D 8274 Objective
+B 8283 Column Listing      SOLVE QBMPC Using NLP From line 217
+E 8284 X
+E 8408 Dist_sqrd
+E 8462 Dist_Inv
+E 8526 Membership
+E 8610 Quality
+E 8628 JMPC
+B 11037 Model Statistics    SOLVE QBMPC Using NLP From line 217

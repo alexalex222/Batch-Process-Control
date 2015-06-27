@@ -1,0 +1,124 @@
+
+--- Job QBMPC_final_state.gms Start 04/18/14 17:12:51 WEX-WEI 24.0.2 x86_64/MS Windows     
+GAMS Rev 240  Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- QBMPC_final_state.gms(17) 2 Mb
+--- GDXin=E:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- QBMPC_final_state.gms(43) 3 Mb
+--- GDXin=E:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- QBMPC_final_state.gms(233) 3 Mb
+--- Starting execution: elapsed 0:00:00.004
+--- QBMPC_final_state.gms(229) 5 Mb
+--- Generating NLP model QBMPC
+--- QBMPC_final_state.gms(231) 11 Mb
+---   3,595 rows  6,004 columns  75,418 non-zeroes
+---   27 nl-code  3 nl-non-zeroes
+--- QBMPC_final_state.gms(231) 9 Mb
+--- Executing IPOPT: elapsed 0:00:00.500
+
+COIN-OR Ipopt    Feb 14, 2013 24.0.2 WEX 38380.38394 WEI x86_64/MS Windows    
+
+COIN-OR Interior Point Optimizer (Ipopt Library trunk)
+written by A. Waechter.
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit http://projects.coin-or.org/Ipopt
+******************************************************************************
+
+This is Ipopt version trunk, running with linear solver mumps.
+
+Number of nonzeros in equality constraint Jacobian...:    68121
+Number of nonzeros in inequality constraint Jacobian.:        3
+Number of nonzeros in Lagrangian Hessian.............:        3
+
+Total number of variables............................:     5391
+                     variables with only lower bounds:        0
+                variables with lower and upper bounds:     1800
+                     variables with only upper bounds:        0
+Total number of equality constraints.................:     3591
+Total number of inequality constraints...............:        3
+        inequality constraints with only lower bounds:        3
+   inequality constraints with lower and upper bounds:        0
+        inequality constraints with only upper bounds:        0
+
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+   0 1.8035967e+002 4.27e-001 1.00e+002   0.0 0.00e+000    -  0.00e+000 0.00e+000   0
+   1 1.7969327e+002 4.21e-001 9.93e+001  -7.1 1.27e+000    -  2.02e-002 6.65e-003f  1
+   2 1.7927440e+002 4.18e-001 1.28e+002  -1.2 1.12e+001    -  3.62e-001 2.40e-003f  1
+   3 1.7958368e+002 4.24e-001 7.83e+002  -0.6 8.06e+000    -  1.00e+000 1.94e-002f  1
+   4 1.7522100e+002 3.80e-001 1.10e+003  -0.4 2.84e+000    -  1.57e-001 1.00e-001f  1
+   5 1.7148368e+002 3.39e-001 1.24e+004  -0.1 2.83e+000    -  9.98e-001 1.11e-001f  1
+   6 1.6146609e+002 2.26e-001 2.87e+004  -0.2 3.05e+000    -  9.71e-001 3.34e-001h  1
+   7 1.5650747e+002 1.60e-001 9.59e+004  -0.2 3.44e+000    -  9.14e-001 2.93e-001h  1
+   8 1.5553984e+002 1.46e-001 1.80e+006   0.3 2.12e+000    -  1.00e+000 8.43e-002h  1
+   9 1.5513080e+002 1.40e-001 5.44e+007   1.2 4.05e+000    -  1.00e+000 4.10e-002h  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  10 1.5498807e+002 1.38e-001 5.36e+007   1.9 1.18e+001    -  1.49e-002 1.49e-002s 16
+  11 1.4276331e+002 3.61e-004 1.86e-005   0.3 3.84e-001    -  1.00e+000 1.00e+000f  1
+  12 1.4348016e+002 3.24e-004 5.91e-006  -0.7 1.84e-001    -  7.57e-001 7.57e-001s 22
+  13 1.4378908e+002 3.08e-004 4.75e-006  -0.3 1.36e-001    -  1.00e+000 1.00e+000s 22
+  14 1.4377377e+002 3.09e-004 9.50e-007  -1.0 5.39e-002    -  1.00e+000 1.00e+000h  1
+  15 1.4378422e+002 3.08e-004 2.29e-007  -1.7 1.32e-001    -  9.49e-001 9.49e-001s 22
+  16 1.4379069e+002 4.62e-003 2.74e-005  -2.6 6.42e+001    -  1.16e-003 1.16e-003s 13
+  17 1.4378647e+002 3.08e-004 2.94e+003  -3.9 1.26e-002    -  7.85e-001 1.00e+000h  1
+  18 1.4378655e+002 3.08e-004 7.55e+002  -3.9 1.08e-003    -  7.43e-001 7.43e-001s 22
+  19 1.4378602e+002 3.96e-004 9.54e-007  -3.9 5.75e-004    -  1.00e+000 1.00e+000s 22
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  20 1.4378658e+002 3.08e-004 1.43e-006  -5.8 5.75e-004    -  1.00e+000 1.00e+000h  1
+  21 1.4378658e+002 3.08e-004 4.77e-007  -5.8 6.09e-007    -  1.00e+000 1.00e+000h  1
+  22 1.4372939e+002 2.00e-001 4.13e-007  -5.8 2.74e-007    -  1.00e+000 1.00e+000H  1
+  23 1.4378653e+002 3.08e-004 9.54e-007  -5.8 3.23e-001    -  1.00e+000 1.00e+000h  1
+  24r1.4378653e+002 3.08e-004 1.00e+003  -3.5 0.00e+000    -  0.00e+000 4.77e-007R 22
+  25r1.4196264e+002 5.80e-004 9.93e+002  -1.7 2.93e+001    -  1.35e-002 6.35e-003f  1
+  26r1.3974309e+002 8.69e-004 9.75e+002  -3.5 7.08e+000    -  9.99e-001 1.85e-002f  1
+  27r1.3940508e+002 9.31e-004 9.12e+002  -2.3 4.21e+000    -  1.00e+000 5.90e-002f  1
+  28r1.3608403e+002 1.54e-003 2.34e+000  -2.9 7.49e-001    -  7.13e-001 1.00e+000f  1
+  29r1.3543756e+002 1.66e-003 1.35e-008  -2.9 2.69e-001    -  1.00e+000 1.00e+000f  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  30r1.3755192e+002 1.23e-003 4.35e-001  -4.3 5.59e-001    -  8.37e-001 1.00e+000f  1
+  31r1.3834946e+002 1.08e-003 4.16e-005  -4.2 2.98e-001    -  1.00e+000 1.00e+000f  1
+  32r1.3880475e+002 1.00e-003 2.29e-002  -6.1 1.62e-001    -  7.42e-001 1.00e+000f  1
+  33r1.3881137e+002 1.00e-003 8.91e-005  -5.1 6.48e-002    -  1.00e+000 1.00e+000f  1
+  34r1.3882248e+002 1.00e-003 1.34e-005  -5.2 4.93e-002    -  1.00e+000 1.00e+000f  1
+  35r1.3886700e+002 9.92e-004 1.84e-003  -9.0 6.75e-002    -  8.23e-001 1.00e+000f  1
+  36r1.3886526e+002 9.92e-004 2.13e-005  -6.6 4.27e-002    -  1.00e+000 1.00e+000f  1
+  37r1.3886542e+002 9.91e-004 2.98e-004  -7.3 9.35e-002    -  9.74e-001 1.00e+000f  1
+  38r1.3886514e+002 9.91e-004 5.29e-006  -7.9 1.90e-002    -  1.00e+000 1.00e+000f  1
+  39r1.3886500e+002 9.91e-004 2.75e-006  -8.5 1.75e-002    -  1.00e+000 1.00e+000h  1
+iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+  40r1.3886493e+002 9.91e-004 1.14e-006  -9.0 1.08e-002    -  1.00e+000 1.00e+000h  1
+
+Number of Iterations....: 40
+
+                                   (scaled)                 (unscaled)
+Objective...............:  1.2030425413796770e+002   1.3886493037459010e+002
+Dual infeasibility......:  8.5528494876440590e+001   9.8723927687874564e+001
+Constraint violation....:  9.9106627931178082e-004   9.9106627931178082e-004
+Complementarity.........:  1.0927645414797827e-009   1.2613574894399355e-009
+Overall NLP error.......:  8.5528494876440590e+001   9.8723927687874564e+001
+
+
+Number of objective function evaluations             = 183
+Number of objective gradient evaluations             = 26
+Number of equality constraint evaluations            = 183
+Number of inequality constraint evaluations          = 183
+Number of equality constraint Jacobian evaluations   = 43
+Number of inequality constraint Jacobian evaluations = 43
+Number of Lagrangian Hessian evaluations             = 41
+Total CPU secs in IPOPT (w/o function evaluations)   =      1.366
+Total CPU secs in NLP function evaluations           =      0.199
+
+EXIT: Converged to a point of local infeasibility. Problem may be infeasible.
+--- Restarting execution
+--- QBMPC_final_state.gms(231) 3 Mb
+--- Reading solution for model QBMPC
+--- QBMPC_final_state.gms(231) 3 Mb
+--- Executing after solve: elapsed 0:00:03.541
+--- QBMPC_final_state.gms(233) 4 Mb
+*** Status: Normal completion
+--- Job QBMPC_final_state.gms Stop 04/18/14 17:12:54 elapsed 0:00:03.547

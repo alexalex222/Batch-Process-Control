@@ -1,0 +1,13 @@
+B 2 C o m p i l a t i o n
+B 28 Equation Listing    SOLVE m Using NLP From line 18
+D 29 e
+B 49 Column Listing      SOLVE m Using NLP From line 18
+E 50 a
+E 67 b
+E 83 r
+B 101 Model Statistics    SOLVE m Using NLP From line 18
+B 119 Solution Report     SOLVE m Using NLP From line 18
+F 154 e
+G 164 a
+G 168 b
+G 169 r

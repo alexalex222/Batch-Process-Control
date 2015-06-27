@@ -1,0 +1,49 @@
+
+--- Job Untitled_1.gms Start 04/08/14 16:03:14 24.1.3 r41464 WIN-VS8 x86/MS Windows
+GAMS 24.1.3   Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- Untitled_1.gms(18) 3 Mb
+--- Starting execution: elapsed 0:00:00.262
+--- Untitled_1.gms(17) 4 Mb
+--- Generating NLP model m
+--- Untitled_1.gms(18) 6 Mb
+---   10 rows  3 columns  30 non-zeroes
+---   121 nl-code  30 nl-non-zeroes
+--- Untitled_1.gms(18) 4 Mb
+--- Executing MINOS: elapsed 0:00:00.304
+
+GAMS/MINOS       24.1.3 r41464 Released Jul 26, 2013 VS8 x86/MS Windows
+M I N O S  5.51     (Jun 2004)
+
+    GAMS/MINOS 5.51, Large Scale Nonlinear Solver
+    B. A. Murtagh, University of New South Wales
+    P. E. Gill, University of California at San Diego,
+    W. Murray, M. A. Saunders, and M. H. Wright,
+    Systems Optimization Laboratory, Stanford University
+
+ Work space allocated           --     0.77 Mb
+
+  Reading Rows...
+  Reading Columns...
+  Reading Instructions...
+
+ Major minor  step     objective  Feasible Optimal  nsb   ncon penalty BSswp
+     1     0T 0.0E+00  0.00000E+00 1.3E+02 0.0E+00    0      1 1.0E+00     0
+     2     1  4.1E-01  0.00000E+00 8.4E+01 1.1E+04    0      3 1.0E+00     0
+     3     1  1.0E+00  0.00000E+00 2.3E+01 5.2E+03    0      4 1.0E+00     0
+     4     9I 1.0E+00  0.00000E+00 2.3E+01 2.0E-02    2     14 1.0E+00     0
+     5     9I 1.0E+00  0.00000E+00 2.3E+01 4.2E-02    2     20 1.0E+00     2
+     6    12I 1.0E+00  0.00000E+00 2.3E+01 1.4E-03    2     33 1.0E+00     0
+     7    11I 1.0E+00  0.00000E+00 2.3E+01 1.3E-03    2     44 1.0E+00     0
+     8    11I 1.0E+00  0.00000E+00 2.3E+01 1.8E-03    2     58 1.0E+00     0
+
+ EXIT - The problem is infeasible.
+
+--- Restarting execution
+--- Untitled_1.gms(18) 0 Mb
+--- Reading solution for model m
+*** Status: Normal completion
+--- Job Untitled_1.gms Stop 04/08/14 16:03:15 elapsed 0:00:01.739

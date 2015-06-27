@@ -1,0 +1,747 @@
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   2  OPTION LIMROW=10
+   3  OPTION LIMCOL=10
+   4   
+   5   
+   6  SETS
+   7  T 'time steps to end of batch'
+   8  M 'measured variables from mult-model'
+   9  P 'variables predicted using mult-model'
+  10  C 'clusters'
+  11  Q 'qualities'
+  12  max_min 'maximum or minimum for constraint'
+  13  U 'inputs (set used only for constraints)'
+  14  PC 'number of principal components in quality model' ,
+  15  PD 'past data used in SPE calculations for quality model';
+  16   
+  17   
+  18   
+GDXIN   D:\Research\pensim_2\QBMPCv2sets.gdx
+--- LOAD  T = 1:T
+--- LOAD  M = 2:M
+--- LOAD  P = 3:P
+--- LOAD  C = 4:C
+--- LOAD  Q = 5:Q
+--- LOAD  max_min = 6:max_min
+--- LOAD  U = 7:U
+--- LOAD  PC = 8:PC
+--- LOAD  PD = 9:PD
+  30   
+  31   
+  32  alias(C, C1);
+  33  alias(M, M1);
+  34   
+  35  PARAMETERS
+  36  data(T, M)
+  37  mult_coeffs(M, P, C)
+  38  mult_coeffs_intercept(P, C)
+  39  PLS_intercept(P)
+  40  FCMc(C, M)
+  41  meas_mean(M)
+  42  meas_std(M)
+  43  pred_mean(P)
+  44  pred_std(P)
+  45  qual_coeffs(M, Q, T)
+  46  q_meas_mean(T,M)
+  47  q_meas_std(T,M)
+  48  q_pred_mean(Q)
+  49  q_pred_std(Q)
+  50  contrib_past(Q)
+  51  qual_set(Q)
+  52  input_const(T,U)
+  53  ;
+  54   
+GDXIN   D:\Research\pensim_2\MPCinitialize.gdx
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+--- LOAD  data = 1:data
+--- LOAD  mult_coeffs = 2:mult_coeffs
+--- LOAD  mult_coeffs_intercept = 3:mult_coeffs_intercept
+--- LOAD  PLS_intercept = 4:PLS_intercept
+--- LOAD  FCMc = 5:FCMc
+--- LOAD  meas_mean = 6:meas_mean
+--- LOAD  meas_std = 7:meas_std
+--- LOAD  pred_mean = 8:pred_mean
+--- LOAD  pred_std = 9:pred_std
+--- LOAD  qual_coeffs = 11:qual_coeffs
+--- LOAD  q_meas_mean = 12:q_meas_mean
+--- LOAD  q_meas_std = 13:q_meas_std
+--- LOAD  q_pred_mean = 14:q_pred_mean
+--- LOAD  q_pred_std = 15:q_pred_std
+--- LOAD  contrib_past = 10:Contrib_past
+--- LOAD  qual_set = 16:qual_set
+--- LOAD  input_const = 17:input_const
+  73   
+  75   
+  76   
+  77  VARIABLES
+  78  X(T,M) 'All trajectories measured by mult model and used by quality model'
+  79  Y(T,P) 'Measurements'
+  80  Dist_sqrd(T,C) 'distance from condition at time T to cluster C center'
+  81  Dist_Inv(T,C) 'inverse of distance squared'
+  82  Membership(T, C) 'degree of belonging of time step T to cluster C'
+  83  Quality(Q) 'qualities'
+  84  JMPC 'MPC objecive'
+  85  Dummy
+  86   
+  87   
+  88  ;
+  89   
+  90  * Initialize variables
+  91  X.l(T,M) = data(T,M);
+  92   
+  93  * fix the values corresponding to curent batch condition (ie current state and output)
+  94  x.fx('1','1') = data('1', '1');
+  95   
+  96  x.fx('1','2') = data('1', '2');
+  97   
+  98  x.fx('1','3') = data('1', '3');
+  99   
+ 100  x.fx('1','4') = data('1', '4');
+ 101   
+ 102  *loop (T,
+ 103      x.lo(T, '5') = input_const(T, '1');
+ 104      x.up(T, '5') = input_const(T, '5');
+ 105   
+ 106      x.lo(T, '6') = input_const(T, '2');
+ 107      x.up(T, '6') = input_const(T, '6');
+ 108   
+ 109      x.lo(T, '7') = input_const(T, '3');
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 110      x.up(T, '7') = input_const(T, '7');
+ 111   
+ 112      x.lo(T, '8') = input_const(T, '4');
+ 113      x.up(T, '8') = input_const(T, '8');
+ 114  *);
+ 115   
+ 116   
+ 117   
+ 118   
+ 119   
+ 120  loop ( T $(ord(T)>1),
+ 121      Dist_sqrd.l(T-1,C) = sum(M, ((x.l(T-1,M)-FCMc(C,M))*(x.l(T-1,M)-FCMc(C,M))));
+ 122      Dist_Inv.l(T-1,C) = 1/(Dist_sqrd.l(T-1,C));
+ 123      Membership.l(T-1,C) = Dist_Inv.l(T-1,C)/sum(C1,Dist_Inv.l(T-1,C1));
+ 124   
+ 125      x.l(T,'1') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '1', C))) +
+ 126           sum(C, mult_coeffs_intercept('1',C)*Membership.l(T-1, C))+PLS_intercept('1'))
+ 127           *pred_std('1')+pred_mean('1')-meas_mean('1'))/meas_std('1');
+ 128   
+ 129      x.l(T,'2') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '2', C))) +
+ 130           sum(C, mult_coeffs_intercept('2',C)*Membership.l(T-1, C))+PLS_intercept('2'))
+ 131           *pred_std('2')+pred_mean('2')-meas_mean('2'))/meas_std('2');
+ 132   
+ 133      x.l(T,'3') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '3', C))) +
+ 134           sum(C, mult_coeffs_intercept('3',C)*Membership.l(T-1, C))+PLS_intercept('3'))
+ 135           *pred_std('3')+pred_mean('3')-meas_mean('3'))/meas_std('3');
+ 136   
+ 137      x.l(T,'4') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeffs(M, '4', C))) +
+ 138           sum(C, mult_coeffs_intercept('4',C)*Membership.l(T-1, C))+PLS_intercept('4'))
+ 139           *pred_std('4')+pred_mean('4')-meas_mean('4'))/meas_std('4');
+ 140  );
+ 141   
+ 142  loop (T,
+ 143   
+ 144     y.l(T,'1')= x.l(T,'1');
+ 145     y.l(T,'2')= x.l(T,'2');
+ 146     y.l(T,'3')= x.l(T,'3');
+ 147     y.l(T,'4')= x.l(T,'4');
+ 148  );
+ 149   
+ 150   
+ 151   
+ 152   
+ 153  loop (Q,
+ 154   
+ 155           Quality.l(Q) = (contrib_past(Q) + sum(T, sum(M,
+ 156                   (x.l(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M)
+ 157                   *qual_coeffs(M, Q, T))));
+ 158   
+ 159   
+ 160  );
+ 161   
+ 162   
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 163   
+ 164  JMPC.l =sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - qual_set(Q)));
+ 165   
+ 166   
+ 167   
+ 168   
+ 169  EQUATIONS
+ 170  Dist_eqn(T,C)
+ 171  Dist_Inv_eqn(T,C)
+ 172  Membership_eqn(T,C)
+ 173   
+ 174  Y1_Mult_Model(T)
+ 175  Y2_Mult_Model(T)
+ 176  Y3_Mult_Model(T)
+ 177  Y4_Mult_Model(T)
+ 178   
+ 179  Quality_eqn(Q)
+ 180   
+ 181  Objective
+ 182  ;
+ 183   
+ 184  Dist_eqn(T,C)$(ord(T)<card(T)) .. Dist_sqrd(T,C) =E=  sum(M, ((x(T,M)-FCMc(C,M))*(x(T,M)-FCMc(C,M))));
+ 185  Dist_Inv_eqn(T,C)$(ord(T)<card(T)) .. Dist_Inv(T,C) * Dist_sqrd(T,C) =E= 1;
+ 186  Membership_eqn(T,C)$(ord(T)<card(T)) ..  Membership(T,C)*sum(C1, Dist_Inv(T,C1)) =E= Dist_Inv(T,C);
+ 187   
+ 188  Y1_Mult_Model(T) $(ord(T)>1) .. x(T, '1') =e=  ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '1', C))) +
+ 189    sum(C, mult_coeffs_intercept('1',C)*Membership(T-1, C))+PLS_intercept('1'))
+ 190    *pred_std('1')+pred_mean('1')-meas_mean('1'))/meas_std('1');
+ 191   
+ 192  Y2_Mult_Model(T) $(ord(T)>1) .. x(T, '2') =e=   ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '2', C))) +
+ 193           sum(C, mult_coeffs_intercept('2',C)*Membership(T-1, C))+PLS_intercept('2'))
+ 194           *pred_std('2')+pred_mean('2')-meas_mean('2'))/meas_std('2');
+ 195   
+ 196  Y3_Mult_Model(T) $(ord(T)>1) .. x(T, '3') =e=  ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '3', C))) +
+ 197           sum(C, mult_coeffs_intercept('3',C)*Membership(T-1, C))+PLS_intercept('3'))
+ 198           *pred_std('3')+pred_mean('3')-meas_mean('3'))/meas_std('3');
+ 199   
+ 200  Y4_Mult_Model(T) $(ord(T)>1) .. x(T, '4') =e=  ((sum(M, sum(C, x(T-1,M)*Membership(T-1,C)*mult_coeffs(M, '4', C))) +
+ 201           sum(C, mult_coeffs_intercept('4',C)*Membership(T-1, C))+PLS_intercept('4'))
+ 202           *pred_std('4')+pred_mean('4')-meas_mean('4'))/meas_std('4');
+ 203   
+ 204  Quality_eqn(Q) .. Quality(Q) =e= (contrib_past(Q) + sum(T, sum(M,
+ 205                   (x(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_meas_std(T,M)
+ 206                   *qual_coeffs(M, Q, T))));
+ 207   
+ 208   
+ 209   
+ 210  Objective .. JMPC =e= sum(Q, (quality(Q) - qual_set(Q))*(quality(Q) - qual_set(Q)))
+ 211   
+ 212   
+ 213   
+ 214   
+ 215  MODEL QBMPC /all/;
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 216   
+ 217  QBMPC.optfile = 1;
+ 218   
+ 219  QBMPC.SCALEOPT = 1;
+ 220   
+ 221  *option nlp = ipopt;
+ 222   
+ 223   
+ 224   
+ 225  solve QBMPC using nlp minimizing JMPC;
+ 226   
+ 227  execute_unload 'matsol2.gdx', x, JMPC, Quality;
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
+
+     1        1 INPUT          0       0  D:\Research\pensim_2\QBMPC_Pen2.gms
+     2       19 GDXIN          1      19  D:\Research\pensim_2\QBMPCv2sets.gdx
+     3       55 GDXIN          1      55  D:\Research\pensim_2\MPCinitialize.gdx
+
+
+COMPILATION TIME     =        0.016 SECONDS      3 MB  24.1.3 r41464 WIN-VS8
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE QBMPC Using NLP From line 225
+
+
+---- Dist_eqn  =E=  
+
+Dist_eqn(1,1)..  (1.374713969916)*X(1,1) - (0.272841167621842)*X(1,2) - (2.67342830146144)*X(1,3) - (5.81595141868987)*X(1,4) - (3.14281589371705)*X(1,5) - (0.713073566945209)*X(1,6) + (1.86959013808304)*X(1,7) - (5.26466408758574)*X(1,8) + Dist_sqrd(1,1)
+      =E= 0 ; (LHS = 0)
+     
+Dist_eqn(1,2)..  (4.28731247443799)*X(1,1) - (0.195363945596412)*X(1,2) - (0.521773297054669)*X(1,3) - (4.36700461399287)*X(1,4) - (0.837045488890453)*X(1,5) - (0.105907094314636)*X(1,6) + (1.44936900557645)*X(1,7) - (2.35481072302416)*X(1,8)
+     
+      + Dist_sqrd(1,2) =E= 0 ; (LHS = 0)
+     
+
+---- Dist_Inv_eqn  =E=  
+
+Dist_Inv_eqn(1,1)..  (0.0473178965378067)*Dist_sqrd(1,1) + (21.133652870664)*Dist_Inv(1,1) =E= 1 ; (LHS = 1)
+     
+Dist_Inv_eqn(1,2)..  (0.0867305368116245)*Dist_sqrd(1,2) + (11.5299643788896)*Dist_Inv(1,2) =E= 1 ; (LHS = 1)
+     
+
+---- Membership_eqn  =E=  
+
+Membership_eqn(1,1)..  - (0.647008955229931)*Dist_Inv(1,1) + (0.352991044770069)*Dist_Inv(1,2) + (0.134048433349431)*Membership(1,1) =E= 0 ; (LHS = 0)
+     
+Membership_eqn(1,2)..  (0.647008955229931)*Dist_Inv(1,1) - (0.352991044770069)*Dist_Inv(1,2) + (0.134048433349431)*Membership(1,2) =E= 0 ; (LHS = 0)
+     
+
+---- Y1_Mult_Model  =E=  
+
+Y1_Mult_Model(2)..  - (1.00056866331049)*X(1,1) - (0.00430376864194846)*X(1,2) - (0.000949556197159563)*X(1,3) - (0.00142851784766276)*X(1,4) - (0.00122025658837444)*X(1,5) - (0.000596590512622699)*X(1,6) - (0.000764054691608577)*X(1,7)
+     
+      + (0.00166619610753677)*X(1,8) + X(2,1) + (1.46443003160364)*Membership(1,1) + (1.39300215737446)*Membership(1,2) =E= 0.00525565252807622 ; (LHS = 0.00525565252807622)
+     
+
+---- Y2_Mult_Model  =E=  
+
+Y2_Mult_Model(2)..  (0.0785091662930339)*X(1,1) - (0.935214030844708)*X(1,2) + (0.0112311242949453)*X(1,3) + (0.0209847845283672)*X(1,4) + (0.022967012146691)*X(1,5) + (0.00697274702068219)*X(1,6) + (0.0094893420561612)*X(1,7) - (0.109994289989493)*X(1,8)
+     
+      + X(2,2) + (0.67441510907523)*Membership(1,1) - (1.00554290225884)*Membership(1,2) =E= -0.000819501139291734 ; (LHS = -0.000819501139291734)
+     
+
+---- Y3_Mult_Model  =E=  
+
+Y3_Mult_Model(2)..  - (0.057427136890532)*X(1,1) - (0.0220946806319257)*X(1,2) - (0.996714315911081)*X(1,3) - (0.0123484288509806)*X(1,4) - (0.0113949605580558)*X(1,5) - (0.00485418076520531)*X(1,6) - (0.0016757969103446)*X(1,7)
+     
+      + (0.0690435035429078)*X(1,8) + X(2,3) - (0.189310405282388)*Membership(1,1) - (0.78965063790174)*Membership(1,2) =E= 0.00531209385896501 ; (LHS = 0.00531209385896501)
+     
+
+---- Y4_Mult_Model  =E=  
+
+Y4_Mult_Model(2)..  (0.00086239901084261)*X(1,1) - (0.000277888301512736)*X(1,2) - (0.000189473850303048)*X(1,3) - (0.999936388578965)*X(1,4) - (0.00462117455922645)*X(1,5) - (2.76370112762086E-5)*X(1,6) - (9.49394845049441E-5)*X(1,7)
+     
+      + (0.000984525812120047)*X(1,8) + X(2,4) - (2.59290838591894)*Membership(1,1) - (2.58266309037356)*Membership(1,2) =E= 0.00393093727901015 ; (LHS = 0.00393093727901015)
+     
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE QBMPC Using NLP From line 225
+
+
+---- Quality_eqn  =E=  
+
+Quality_eqn(1)..  0.000411502583861909*X(1,1) - 0.00495203964226657*X(1,2) + 5.12948264591968E-5*X(1,3) - 0.00098861097992241*X(1,4) + 0.000633606690696288*X(2,1) - 0.00563018991460814*X(2,2) + 5.5513797070622E-5*X(2,3) - 0.00099828512024899*X(2,4)
+     
+      + Quality(1) =E= -13.3574929771755 ; (LHS = -13.3574929771755)
+     
+Quality_eqn(2)..  0.00356003410021385*X(1,1) + 0.00298579749281056*X(1,2) + 0.00031305031639493*X(1,3) + 0.00115790426787923*X(1,4) + 0.00319926282808593*X(2,1) + 0.00392567932029613*X(2,2) + 0.000305867065629735*X(2,3) + 0.00116825227476081*X(2,4)
+     
+      + Quality(2) =E= -24.3888773329529 ; (LHS = -24.3888773329529)
+     
+Quality_eqn(3)..  - 0.0298679515992941*X(1,1) + 0.0222610587512389*X(1,2) - 0.0025676063168905*X(1,3) + 0.000213433944047932*X(1,4) - 0.0293051260610701*X(2,1) + 0.0206006544100583*X(2,2) - 0.0025558673456638*X(2,3) + 0.000204007811010357*X(2,4)
+     
+      + Quality(3) =E= 205.035086256646 ; (LHS = 205.035086256646)
+     
+
+---- Objective  =E=  
+
+Objective..  (12.2482323188713)*Quality(1) + (53.6756465852763)*Quality(2) - (401.866467133527)*Quality(3) + JMPC =E= 0 ; (LHS = 0)
+     
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                       06/17/14 14:29:43 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE QBMPC Using NLP From line 225
+
+
+---- X  All trajectories measured by mult model and used by quality model
+
+X(1,1)
+                (.LO, .L, .UP, .M = -1.41962251012277, -1.41962251012277, -1.41962251012277, 0)
+       (1.3747) Dist_eqn(1,1)
+       (4.2873) Dist_eqn(1,2)
+      (-1.0006) Y1_Mult_Model(2)
+       (0.0785) Y2_Mult_Model(2)
+      (-0.0574) Y3_Mult_Model(2)
+       (0.0009) Y4_Mult_Model(2)
+        0.0004  Quality_eqn(1)
+        0.0036  Quality_eqn(2)
+       -0.0299  Quality_eqn(3)
+
+X(1,2)
+                (.LO, .L, .UP, .M = 0.165047749431377, 0.165047749431377, 0.165047749431377, 0)
+      (-0.2728) Dist_eqn(1,1)
+      (-0.1954) Dist_eqn(1,2)
+      (-0.0043) Y1_Mult_Model(2)
+      (-0.9352) Y2_Mult_Model(2)
+      (-0.0221) Y3_Mult_Model(2)
+      (-0.0003) Y4_Mult_Model(2)
+       -0.005   Quality_eqn(1)
+        0.003   Quality_eqn(2)
+        0.0223  Quality_eqn(3)
+
+X(1,3)
+                (.LO, .L, .UP, .M = 0.752656954210653, 0.752656954210653, 0.752656954210653, 0)
+      (-2.6734) Dist_eqn(1,1)
+      (-0.5218) Dist_eqn(1,2)
+      (-0.0009) Y1_Mult_Model(2)
+       (0.0112) Y2_Mult_Model(2)
+      (-0.9967) Y3_Mult_Model(2)
+      (-0.0002) Y4_Mult_Model(2)
+  5.1294826E-5  Quality_eqn(1)
+        0.0003  Quality_eqn(2)
+       -0.0026  Quality_eqn(3)
+
+X(1,4)
+                (.LO, .L, .UP, .M = 2.58264055423769, 2.58264055423769, 2.58264055423769, 0)
+      (-5.816)  Dist_eqn(1,1)
+      (-4.367)  Dist_eqn(1,2)
+      (-0.0014) Y1_Mult_Model(2)
+       (0.021)  Y2_Mult_Model(2)
+      (-0.0123) Y3_Mult_Model(2)
+      (-0.9999) Y4_Mult_Model(2)
+       -0.001   Quality_eqn(1)
+        0.0012  Quality_eqn(2)
+        0.0002  Quality_eqn(3)
+
+X(1,5)
+                (.LO, .L, .UP, .M = 0.77616782942248, 0.934593311085504, 1.19364423330883, 0)
+      (-3.1428) Dist_eqn(1,1)
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 10
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE QBMPC Using NLP From line 225
+
+
+     X  All trajectories measured by mult model and used by quality model
+
+      (-0.837)  Dist_eqn(1,2)
+      (-0.0012) Y1_Mult_Model(2)
+       (0.023)  Y2_Mult_Model(2)
+      (-0.0114) Y3_Mult_Model(2)
+      (-0.0046) Y4_Mult_Model(2)
+
+X(1,6)
+                (.LO, .L, .UP, .M = -0.22116009928802, 0.165980228952301, 0.819548756466023, 0)
+      (-0.7131) Dist_eqn(1,1)
+      (-0.1059) Dist_eqn(1,2)
+      (-0.0006) Y1_Mult_Model(2)
+       (0.007)  Y2_Mult_Model(2)
+      (-0.0049) Y3_Mult_Model(2)
+ (-2.763701E-5) Y4_Mult_Model(2)
+
+X(1,7)
+                (.LO, .L, .UP, .M = -1.66178195667026, -0.816325475730032, 0.977199038641583, 0)
+       (1.8696) Dist_eqn(1,1)
+       (1.4494) Dist_eqn(1,2)
+      (-0.0008) Y1_Mult_Model(2)
+       (0.0095) Y2_Mult_Model(2)
+      (-0.0017) Y3_Mult_Model(2)
+ (-9.493948E-5) Y4_Mult_Model(2)
+
+X(1,8)
+                (.LO, .L, .UP, .M = 1.78091939866552, 1.90083434943062, 1.90083434943062, 0)
+      (-5.2647) Dist_eqn(1,1)
+      (-2.3548) Dist_eqn(1,2)
+       (0.0017) Y1_Mult_Model(2)
+      (-0.11)   Y2_Mult_Model(2)
+       (0.069)  Y3_Mult_Model(2)
+       (0.001)  Y4_Mult_Model(2)
+
+X(2,1)
+                (.LO, .L, .UP, .M = -INF, -1.41295990479624, +INF, 0)
+        1       Y1_Mult_Model(2)
+        0.0006  Quality_eqn(1)
+        0.0032  Quality_eqn(2)
+       -0.0293  Quality_eqn(3)
+
+X(2,2)
+                (.LO, .L, .UP, .M = -INF, 0.411713267528885, +INF, 0)
+        1       Y2_Mult_Model(2)
+       -0.0056  Quality_eqn(1)
+        0.0039  Quality_eqn(2)
+        0.0206  Quality_eqn(3)
+
+REMAINING 2 ENTRIES SKIPPED
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 11
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE QBMPC Using NLP From line 225
+
+
+---- Dist_sqrd  distance from condition at time T to cluster C center
+
+Dist_sqrd(1,1)
+                (.LO, .L, .UP, .M = -INF, 21.133652870664, +INF, 0)
+        1       Dist_eqn(1,1)
+       (0.0473) Dist_Inv_eqn(1,1)
+
+Dist_sqrd(1,2)
+                (.LO, .L, .UP, .M = -INF, 11.5299643788896, +INF, 0)
+        1       Dist_eqn(1,2)
+       (0.0867) Dist_Inv_eqn(1,2)
+
+
+---- Dist_Inv  inverse of distance squared
+
+Dist_Inv(1,1)
+                (.LO, .L, .UP, .M = -INF, 0.0473178965378067, +INF, 0)
+      (21.1337) Dist_Inv_eqn(1,1)
+      (-0.647)  Membership_eqn(1,1)
+       (0.647)  Membership_eqn(1,2)
+
+Dist_Inv(1,2)
+                (.LO, .L, .UP, .M = -INF, 0.0867305368116245, +INF, 0)
+      (11.53)   Dist_Inv_eqn(1,2)
+       (0.353)  Membership_eqn(1,1)
+      (-0.353)  Membership_eqn(1,2)
+
+
+---- Membership  degree of belonging of time step T to cluster C
+
+Membership(1,1)
+                (.LO, .L, .UP, .M = -INF, 0.352991044770069, +INF, 0)
+       (0.134)  Membership_eqn(1,1)
+       (1.4644) Y1_Mult_Model(2)
+       (0.6744) Y2_Mult_Model(2)
+      (-0.1893) Y3_Mult_Model(2)
+      (-2.5929) Y4_Mult_Model(2)
+
+Membership(1,2)
+                (.LO, .L, .UP, .M = -INF, 0.647008955229931, +INF, 0)
+       (0.134)  Membership_eqn(1,2)
+       (1.393)  Y1_Mult_Model(2)
+      (-1.0055) Y2_Mult_Model(2)
+      (-0.7897) Y3_Mult_Model(2)
+      (-2.5827) Y4_Mult_Model(2)
+
+
+---- Quality  qualities
+
+Quality(1)
+                (.LO, .L, .UP, .M = -INF, -13.3478101702923, +INF, 0)
+        1       Quality_eqn(1)
+      (12.2482) Objective
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 12
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE QBMPC Using NLP From line 225
+
+
+     Quality  qualities
+
+
+Quality(2)
+                (.LO, .L, .UP, .M = -INF, -24.3878424762618, +INF, 0)
+        1       Quality_eqn(2)
+      (53.6756) Objective
+
+Quality(3)
+                (.LO, .L, .UP, .M = -INF, 204.941465445478, +INF, 0)
+        1       Quality_eqn(3)
+    (-401.8665) Objective
+
+
+---- JMPC  MPC objecive
+
+JMPC
+                (.LO, .L, .UP, .M = -INF, 41131.9379094168, +INF, 0)
+        1       Objective
+
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 13
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE QBMPC Using NLP From line 225
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           9     SINGLE EQUATIONS           14
+BLOCKS OF VARIABLES           6     SINGLE VARIABLES           22
+NON ZERO ELEMENTS           103     NON LINEAR N-Z             69
+DERIVATIVE POOL              10     CONSTANT POOL             115
+CODE LENGTH                 399
+
+
+GENERATION TIME      =        0.093 SECONDS      4 MB  24.1.3 r41464 WIN-VS8
+
+
+EXECUTION TIME       =        0.093 SECONDS      4 MB  24.1.3 r41464 WIN-VS8
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 14
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 225
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   QBMPC               OBJECTIVE  JMPC
+     TYPE    NLP                 DIRECTION  MINIMIZE
+     SOLVER  CONOPT              FROM LINE  225
+
+**** SOLVER STATUS     1 Normal Completion         
+**** MODEL STATUS      2 Locally Optimal           
+**** OBJECTIVE VALUE            41131.9373
+
+ RESOURCE USAGE, LIMIT          0.000      1000.000
+ ITERATION COUNT, LIMIT         4    2000000000
+ EVALUATION ERRORS              0             0
+CONOPT 3         24.1.3 r41464 Released Jul 26, 2013 VS8 x86/MS Windows       
+Reading parameter(s) from "D:\Research\pensim_2\conopt.opt"
+>>  rtredg = 0.01;      
+Finished reading from "D:\Research\pensim_2\conopt.opt"
+ 
+ 
+    C O N O P T 3   version 3.15L
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ 
+    The model has 22 variables and 14 constraints
+    with 103 Jacobian elements, 69 of which are nonlinear.
+    The Hessian of the Lagrangian has 11 elements on the diagonal,
+    22 elements below the diagonal, and 17 nonlinear variables.
+ 
+ ** Warning **  The variance of the derivatives in the initial
+                point is large (= 4.3 ). A better initial
+                point, a better scaling, or better bounds on the
+                variables will probably help the optimization.
+ 
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+ 
+ CONOPT time Total                            0.000 seconds
+   of which: Function evaluations             0.000 =  0.0%
+             1st Derivative evaluations       0.000 =  0.0%
+ 
+
+---- EQU Dist_eqn  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1          .              .              .            -0.1324      
+1.2          .              .              .             0.2432      
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 15
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 225
+
+
+---- EQU Dist_Inv_eqn  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1         1.0000         1.0000         1.0000         2.7781      
+1.2         1.0000         1.0000         1.0000        -2.7781      
+
+---- EQU Membership_eqn  
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1          .              .              .           -88.1148      
+1.2          .              .              .          -178.1440      
+
+---- EQU Y1_Mult_Model  
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+2         0.0053         0.0053         0.0053        11.9562      
+
+---- EQU Y2_Mult_Model  
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+2        -0.0008        -0.0008        -0.0008        -8.1370      
+
+---- EQU Y3_Mult_Model  
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+2         0.0053         0.0053         0.0053         1.0442      
+
+---- EQU Y4_Mult_Model  
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+2         0.0039         0.0039         0.0039        -0.0315      
+
+---- EQU Quality_eqn  
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+1       -13.3575       -13.3575       -13.3575       -12.2482      
+2       -24.3889       -24.3889       -24.3889       -53.6756      
+3       205.0351       205.0351       205.0351       401.8665      
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- EQU Objective           .              .              .             1.0000      
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 16
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 225
+
+
+---- VAR X  All trajectories measured by mult model and used by quality model
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1        -1.4196        -1.4196        -1.4196        24.0021      
+1.2         0.1650         0.1650         0.1650       -16.3689      
+1.3         0.7527         0.7527         0.7527         1.9659      
+1.4         2.5826         2.5826         2.5826         0.4256      
+1.5         0.7762         0.9283         1.1936        -0.0005      
+1.6        -0.2212         0.1633         0.8195        -0.0002      
+1.7        -1.6618        -0.7440         0.9772        -0.0006      
+1.8         1.7809         1.9008         1.9008        -1.1135      
+2.1        -INF           -1.4129        +INF             .          
+2.2        -INF            0.4119        +INF             .          
+2.3        -INF            0.5834        +INF             .          
+2.4        -INF            2.5902        +INF             .          
+
+---- VAR Dist_sqrd  distance from condition at time T to cluster C center
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1        -INF           20.9822        +INF             .          
+1.2        -INF           11.4249        +INF             .          
+
+---- VAR Dist_Inv  inverse of distance squared
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1        -INF            0.0477        +INF             .          
+1.2        -INF            0.0875        +INF             .          
+
+---- VAR Membership  degree of belonging of time step T to cluster C
+
+           LOWER          LEVEL          UPPER         MARGINAL
+
+1.1        -INF            0.3525        +INF             .          
+1.2        -INF            0.6475        +INF             .          
+
+---- VAR Quality  qualities
+
+         LOWER          LEVEL          UPPER         MARGINAL
+
+1        -INF          -13.3478        +INF             .          
+2        -INF          -24.3878        +INF             .          
+3        -INF          204.9415        +INF             .          
+
+                           LOWER          LEVEL          UPPER         MARGINAL
+
+---- VAR JMPC              -INF        41131.9373        +INF             .          
+
+  JMPC  MPC objecive
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 17
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE QBMPC Using NLP From line 225
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             0 INFEASIBLE
+                             0  UNBOUNDED
+                             0     ERRORS
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows                                                                                                                                                                      06/17/14 14:29:43 Page 18
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+EXECUTION TIME       =        0.047 SECONDS      3 MB  24.1.3 r41464 WIN-VS8
+
+
+USER: Chemical Engineering                           G120713:0528AN-WIN
+      McMaster University                                        DC1678
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      D:\Research\pensim_2\QBMPC_Pen2.gms
+Output     D:\Research\pensim_2\QBMPC_Pen2.lst

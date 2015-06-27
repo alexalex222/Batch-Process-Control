@@ -1,0 +1,26 @@
+
+--- Job QBMPC_Pen.gms Start 06/13/14 21:05:40 WEX-WEI 24.0.2 x86_64/MS Windows     
+GAMS Rev 240  Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- QBMPC_Pen.gms(18) 2 Mb
+--- GDXin=E:\OneDrive\Research\pensim_2\QBMPCv2sets.gdx
+--- QBMPC_Pen.gms(54) 3 Mb
+--- GDXin=E:\OneDrive\Research\pensim_2\MPCinitialize.gdx
+--- QBMPC_Pen.gms(219) 4 Mb
+--- Starting execution: elapsed 0:00:00.005
+--- QBMPC_Pen.gms(215) 6 Mb
+--- Generating NLP model QBMPC
+--- QBMPC_Pen.gms(217) 11 Mb 600 Errors
+---   6,004 rows  8,408 columns  50,419 non-zeroes
+---   226,821 nl-code  39,603 nl-non-zeroes
+*** Model structure has 600 data errors
+--- QBMPC_Pen.gms(217) 9 Mb
+*** SOLVE aborted
+--- Executing CONOPT: elapsed 0:00:00.437
+--- QBMPC_Pen.gms(217) 9 Mb 600 Errors
+*** Status: Execution error(s)
+--- Job QBMPC_Pen.gms Stop 06/13/14 21:05:40 elapsed 0:00:00.439
+Exit code = 3

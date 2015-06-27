@@ -1,0 +1,52 @@
+
+--- Job QBMPC_final_state_scld.gms Start 04/10/14 16:14:16 24.1.3 r41464 WIN-VS8 x86/MS Windows
+GAMS 24.1.3   Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- QBMPC_final_state_scld.gms(17) 2 Mb
+--- GDXin=D:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- QBMPC_final_state_scld.gms(44) 3 Mb
+--- GDXin=D:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- QBMPC_final_state_scld.gms(239) 3 Mb
+--- Starting execution: elapsed 0:00:00.171
+--- QBMPC_final_state_scld.gms(235) 5 Mb
+--- Generating NLP model QBMPC
+--- QBMPC_final_state_scld.gms(237) 8 Mb
+---   8,384 rows  5,988 columns  8,384 non-zeroes
+---   0 nl-code  0 nl-non-zeroes
+--- QBMPC_final_state_scld.gms(237) 6 Mb
+--- Executing CONOPT: elapsed 0:00:01.194
+CONOPT 3         24.1.3 r41464 Released Jul 26, 2013 VS8 x86/MS Windows       
+ 
+ 
+    C O N O P T 3   version 3.15L
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ 
+   Iter Phase Ninf   Infeasibility   RGmax    NSB   Step InItr MX OK
+      0   0        0.0000000000E+00 (Input point)
+                                Pre-triangular equations:     3592
+                                Post-triangular equations:    4792
+      1   0        0.0000000000E+00 (After pre-processing)
+      2   0        0.0000000000E+00 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    253.790557568
+ 
+   Iter Phase Ninf     Objective     RGmax    NSB   Step InItr MX OK
+      3   3        2.5379055757E+02 0.0E+00     0 0.0E+00    0 F  T
+      4   3        2.5379055757E+02 0.0E+00     0
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Restarting execution
+--- QBMPC_final_state_scld.gms(237) 0 Mb
+--- Reading solution for model QBMPC
+--- QBMPC_final_state_scld.gms(237) 3 Mb
+--- Executing after solve: elapsed 0:00:02.096
+--- QBMPC_final_state_scld.gms(239) 4 Mb
+*** Status: Normal completion
+--- Job QBMPC_final_state_scld.gms Stop 04/10/14 16:14:18 elapsed 0:00:02.160

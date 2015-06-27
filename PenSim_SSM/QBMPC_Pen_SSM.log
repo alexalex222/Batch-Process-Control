@@ -1,0 +1,61 @@
+
+--- Job QBMPC_Pen_SSM.gms Start 04/06/14 08:18:15 WEX-WEI 24.0.2 x86_64/MS Windows     
+GAMS Rev 240  Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- QBMPC_Pen_SSM.gms(18) 2 Mb
+--- GDXin=E:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- QBMPC_Pen_SSM.gms(26) 3 Mb 1 Error
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(27) 3 Mb 2 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(46) 3 Mb
+--- GDXin=E:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- QBMPC_Pen_SSM.gms(49) 3 Mb 3 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(50) 3 Mb 4 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(51) 3 Mb 5 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(52) 3 Mb 6 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(53) 3 Mb 7 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(54) 3 Mb 8 Errors
+*** Error 492 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol not in GDX
+--- QBMPC_Pen_SSM.gms(131) 3 Mb 9 Errors
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen_SSM.gms(132) 3 Mb 11 Errors
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen_SSM.gms(133) 3 Mb 12 Errors
+*** Error 141 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Symbol neither initialized nor assigned
+       A wild shot: You may have spurious commas in the explanatory
+       text of a declaration. Check symbol reference list.
+--- QBMPC_Pen_SSM.gms(181) 3 Mb 13 Errors
+*** Error 257 in E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen_SSM.gms
+    Solve statement not checked because of previous errors
+--- QBMPC_Pen_SSM.gms(183) 3 Mb 13 Errors
+*** Status: Compilation error(s)
+--- Job QBMPC_Pen_SSM.gms Stop 04/06/14 08:18:15 elapsed 0:00:00.115
+Exit code = 2

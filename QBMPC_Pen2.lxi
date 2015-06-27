@@ -1,0 +1,37 @@
+B 2 C o m p i l a t i o n
+B 255 Include File Summary
+B 271 Equation Listing    SOLVE QBMPC Using NLP From line 225
+D 272 Dist_eqn
+D 369 Dist_Inv_eqn
+D 414 Membership_eqn
+D 469 Y1_Mult_Model
+D 587 Y2_Mult_Model
+D 720 Y3_Mult_Model
+D 858 Y4_Mult_Model
+D 1013 Quality_eqn
+D 6791 Objective
+B 6800 Column Listing      SOLVE QBMPC Using NLP From line 225
+E 6801 X
+E 6924 Dist_sqrd
+E 6978 Dist_Inv
+E 7042 Membership
+E 7126 Quality
+E 7144 JMPC
+B 7153 Model Statistics    SOLVE QBMPC Using NLP From line 225
+B 7171 Solution Report     SOLVE QBMPC Using NLP From line 225
+F 7223 Dist_eqn
+F 8188 Dist_Inv_eqn
+F 9153 Membership_eqn
+F 10118 Y1_Mult_Model
+F 10603 Y2_Mult_Model
+F 11088 Y3_Mult_Model
+F 11573 Y4_Mult_Model
+F 12058 Quality_eqn
+F 12064 Objective
+G 12065 X
+G 15914 Dist_sqrd
+G 16879 Dist_Inv
+G 17844 Membership
+G 18809 Quality
+G 18817 JMPC
+B 18831 E x e c u t i o n

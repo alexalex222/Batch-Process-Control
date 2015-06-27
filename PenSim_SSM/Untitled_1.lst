@@ -1,0 +1,197 @@
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows 04/08/14 16:03:14 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   1  set i 'points' /p1*p10/;
+   2  parameters
+   3  x(i) 'x coordinates',
+   4  y(i) 'y coordinates';
+   5  * fill with random data
+   6  x(i) = uniform(1,10);
+   7  y(i) = uniform(1,10);
+   8  variables
+   9  a 'x coordinate of center of circle'
+  10  b 'y coordinate of center of circle'
+  11  r 'radius';
+  12  equations
+  13  e(i) 'points must be inside circle';
+  14  e(i).. sqr(x(i)-a) + sqr(y(i)-b) =l= sqr(r);
+  15  r.lo = 0;
+  16  model m /all/;
+  17  option nlp=minos;
+  18  solve m using nlp minimizing r;
+
+
+COMPILATION TIME     =        0.000 SECONDS      3 MB  24.1.3 r41464 WIN-VS8
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows 04/08/14 16:03:14 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Equation Listing    SOLVE m Using NLP From line 18
+
+
+---- e  =L=  points must be inside circle
+
+e(p1)..  - (5.091448376)*a - (19.966117286)*b + (0)*r =L= 0 ;
+     
+      (LHS = 106.142171510945, INFES = 106.142171510945 ****)
+     
+e(p2)..  - (17.178800744)*a - (12.417200804)*b + (0)*r =L= 0 ;
+     
+      (LHS = 112.324517702228, INFES = 112.324517702228 ****)
+     
+e(p3)..  - (11.906756408)*a - (19.840394702)*b + (0)*r =L= 0 ;
+     
+      (LHS = 133.85302752265, INFES = 133.85302752265 ****)
+     
+REMAINING 7 ENTRIES SKIPPED
+
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows 04/08/14 16:03:14 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Column Listing      SOLVE m Using NLP From line 18
+
+
+---- a  x coordinate of center of circle
+
+a
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+      (-5.0914) e(p1)
+     (-17.1788) e(p2)
+     (-11.9068) e(p3)
+      (-7.4205) e(p4)
+      (-7.2598) e(p5)
+      (-6.033)  e(p6)
+      (-8.2969) e(p7)
+     (-17.4129) e(p8)
+      (-3.208)  e(p9)
+     (-11.0038) e(p10)
+
+
+---- b  y coordinate of center of circle
+
+b
+                (.LO, .L, .UP, .M = -INF, 0, +INF, 0)
+     (-19.9661) e(p1)
+     (-12.4172) e(p2)
+     (-19.8404) e(p3)
+     (-15.7205) e(p4)
+      (-4.3525) e(p5)
+     (-13.5149) e(p6)
+      (-4.8713) e(p7)
+      (-6.5014) e(p8)
+     (-14.0407) e(p9)
+      (-9.8364) e(p10)
+
+
+---- r  radius
+
+r
+                (.LO, .L, .UP, .M = 0, 0, +INF, 0)
+       (0)      e(p1)
+       (0)      e(p2)
+       (0)      e(p3)
+       (0)      e(p4)
+       (0)      e(p5)
+       (0)      e(p6)
+       (0)      e(p7)
+       (0)      e(p8)
+       (0)      e(p9)
+       (0)      e(p10)
+
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows 04/08/14 16:03:14 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE m Using NLP From line 18
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           1     SINGLE EQUATIONS           10
+BLOCKS OF VARIABLES           3     SINGLE VARIABLES            3
+NON ZERO ELEMENTS            30     NON LINEAR N-Z             30
+DERIVATIVE POOL              10     CONSTANT POOL              36
+CODE LENGTH                 121
+
+
+GENERATION TIME      =        0.047 SECONDS      4 MB  24.1.3 r41464 WIN-VS8
+
+
+EXECUTION TIME       =        0.047 SECONDS      4 MB  24.1.3 r41464 WIN-VS8
+GAMS 24.1.3  r41464 Released Jul 26, 2013 WIN-VS8 x86/MS Windows 04/08/14 16:03:14 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Solution Report     SOLVE m Using NLP From line 18
+
+
+               S O L V E      S U M M A R Y
+
+     MODEL   m                   OBJECTIVE  r
+     TYPE    NLP                 DIRECTION  MINIMIZE
+     SOLVER  MINOS               FROM LINE  18
+
+**** SOLVER STATUS     1 Normal Completion         
+**** MODEL STATUS      5 Locally Infeasible        
+**** OBJECTIVE VALUE                0.0000
+
+ RESOURCE USAGE, LIMIT          0.281      1000.000
+ ITERATION COUNT, LIMIT        56    2000000000
+ EVALUATION ERRORS              0             0
+
+GAMS/MINOS       24.1.3 r41464 Released Jul 26, 2013 VS8 x86/MS Windows
+M I N O S  5.51     (Jun 2004)
+
+    GAMS/MINOS 5.51, Large Scale Nonlinear Solver
+    B. A. Murtagh, University of New South Wales
+    P. E. Gill, University of California at San Diego,
+    W. Murray, M. A. Saunders, and M. H. Wright,
+    Systems Optimization Laboratory, Stanford University
+
+ Work space allocated           --     0.77 Mb
+
+ EXIT - The problem is infeasible.
+
+
+---- EQU e  points must be inside circle
+
+       LOWER     LEVEL     UPPER    MARGINAL
+
+p1      -INF       .         .       -1.616      
+p2      -INF       .         .       -0.894      
+p3      -INF      0.851      .         .    INFES
+p4      -INF      7.259      .         .    INFES
+p5      -INF     53.123      .         .    INFES
+p6      -INF     14.886      .         .    INFES
+p7      -INF     47.303      .         .    INFES
+p8      -INF     39.828      .         .    INFES
+p9      -INF     24.594      .         .    INFES
+p10     -INF     17.217      .         .    INFES
+
+                       LOWER     LEVEL     UPPER    MARGINAL
+
+---- VAR a              -INF      6.143     +INF       .         
+---- VAR b              -INF      9.018     +INF       .         
+---- VAR r               .         .        +INF       EPS       
+
+  a  x coordinate of center of circle
+  b  y coordinate of center of circle
+  r  radius
+
+
+**** REPORT SUMMARY :        0     NONOPT
+                             8 INFEASIBLE (INFES)
+                    SUM    205.060
+                    MAX     53.123
+                    MEAN    25.633
+                             0  UNBOUNDED
+                             0     ERRORS
+
+
+EXECUTION TIME       =        0.000 SECONDS      2 MB  24.1.3 r41464 WIN-VS8
+
+
+USER: Chemical Engineering                           G120713:0528AN-WIN
+      McMaster University                                        DC1678
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      D:\OneDrive\Research\PenSim_SSM\Untitled_1.gms
+Output     D:\OneDrive\Research\PenSim_SSM\Untitled_1.lst

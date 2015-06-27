@@ -1,0 +1,72 @@
+
+--- Job QBMPC_Pen2.gms Start 06/13/14 19:45:21 WEX-WEI 24.0.2 x86_64/MS Windows     
+GAMS Rev 240  Copyright (C) 1987-2013 GAMS Development. All rights reserved
+Licensee: Chemical Engineering                           G120713:0528AN-WIN
+          McMaster University                                        DC1678
+          License for teaching and research at degree granting institutions
+--- Starting compilation
+--- QBMPC_Pen2.gms(19) 2 Mb
+--- GDXin=E:\OneDrive\Research\pensim_2\QBMPCv2sets.gdx
+--- QBMPC_Pen2.gms(55) 3 Mb
+--- GDXin=E:\OneDrive\Research\pensim_2\MPCinitialize.gdx
+--- QBMPC_Pen2.gms(227) 4 Mb
+--- Starting execution: elapsed 0:00:00.005
+--- QBMPC_Pen2.gms(219) 6 Mb
+--- Generating NLP model QBMPC
+--- QBMPC_Pen2.gms(225) 11 Mb
+---   4,804 rows  6,728 columns  40,339 non-zeroes
+---   181,461 nl-code  31,683 nl-non-zeroes
+--- QBMPC_Pen2.gms(225) 8 Mb
+--- Executing CONOPT: elapsed 0:00:00.283
+CONOPT 3         Feb 14, 2013 24.0.2 WEX 38380.38394 WEI x86_64/MS Windows    
+Reading parameter(s) from "E:\OneDrive\Research\pensim_2\conopt.opt"
+>>  rtredg = 0.01;      
+Finished reading from "E:\OneDrive\Research\pensim_2\conopt.opt"
+ 
+ 
+    C O N O P T 3   version 3.15I
+    Copyright (C)   ARKI Consulting and Development A/S
+                    Bagsvaerdvej 246 A
+                    DK-2880 Bagsvaerd, Denmark
+ 
+ 
+   Iter Phase Ninf   Infeasibility   RGmax    NSB   Step InItr MX OK
+      0   0        3.2463294206E-12 (Input point)
+                                Pre-triangular equations:        0
+                                Post-triangular equations:       8
+      1   0        3.1494737374E-12 (After pre-processing)
+      2   0        2.7707489081E-12 (After scaling)
+ 
+ ** Feasible solution. Value of objective =    198.046120846
+ 
+   Iter Phase Ninf     Objective     RGmax    NSB   Step InItr MX OK
+      3   3        1.9804183833E+02 1.0E+03   281 1.0E+00    3 T  T
+      4   3        2.4609877600E+01 1.0E+03   278 1.0E+00    7 F  T
+      5   3        1.1369306214E+01 2.8E+02   271 2.8E-01    6 F  T
+      6   3        6.9348229974E+00 8.2E+01   271 3.1E-04      T  T
+      7   3        5.4178403043E+00 6.2E+01   270 1.5E-04      T  T
+      8   3        4.2096883006E+00 6.5E+01   269 2.1E-04      F  T
+      9   3        3.6040599008E+00 5.4E+01   269 6.1E-05      T  T
+     10   3        3.0487917274E+00 3.6E+01   268 2.8E-04      F  T
+     11   3        2.5697014596E+00 4.9E+01   267 1.3E-04      F  T
+     12   4        2.4066696709E+00 2.5E+01   267 6.7E-01      T  T
+ 
+   Iter Phase Ninf     Objective     RGmax    NSB   Step InItr MX OK
+     13   4        1.4110718340E+00 2.5E+01   266 5.3E+00      T  T
+     14   4        1.0922695124E+00 2.7E+01   266 2.3E+00      T  T
+     15   4        2.4223978162E-01 1.6E+01   265 2.9E+00      T  T
+     16   4        4.9389566752E-02 3.6E+01   264 1.0E+00      F  T
+     17   4        1.2809689945E-02 1.4E+01   264 1.0E+00      F  T
+     18   4        1.2809655571E-02 1.7E-02   274 1.0E+00    2 F  T
+     19   4        1.2809655587E-02 6.4E-03   274 0.0E+00    2 F  T
+     20   4        1.2809655587E-02 6.4E-03   274
+ 
+ ** Optimal solution. Reduced gradient less than tolerance.
+ 
+--- Restarting execution
+--- QBMPC_Pen2.gms(225) 4 Mb
+--- Reading solution for model QBMPC
+--- Executing after solve: elapsed 0:00:00.827
+--- QBMPC_Pen2.gms(227) 4 Mb
+*** Status: Normal completion
+--- Job QBMPC_Pen2.gms Stop 06/13/14 19:45:21 elapsed 0:00:00.833

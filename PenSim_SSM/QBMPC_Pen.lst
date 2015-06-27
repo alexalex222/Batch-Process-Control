@@ -1,0 +1,326 @@
+GAMS Rev 240  WEX-WEI 24.0.2 x86_64/MS Windows          04/08/14 21:00:27 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   2  OPTION LIMROW=10
+   3  OPTION LIMCOL=10
+   4   
+   5  SETS
+   6  T 'time steps to end of batch'
+   7  M 'measured variables from mult-model'
+   8  P 'variables predicted using mult-model'
+   9  C 'clusters'
+  10  Q 'qualities'
+  11  max_min 'maximum or minimum for constraint'
+  12  U 'inputs (set used only for constraints)'
+  13  PC 'number of principal components in quality model' ,
+  14  PD 'past data used in SPE calculations for quality model';
+  15   
+  16   
+  17   
+GDXIN   E:\OneDrive\Research\PenSim_SSM\QBMPCv2sets.gdx
+--- LOAD  T = 1:T
+--- LOAD  M = 2:M
+--- LOAD  P = 3:P
+  22  $load C
+****        $492
+--- LOAD  Q = 5:Q
+--- LOAD  max_min = 6:max_min
+--- LOAD  U = 7:U
+  26  $load PC
+****         $492
+  27  $load PD
+****         $492
+  29   
+  30   
+  31  alias(C, C1);
+  32  alias(M, M1);
+  33   
+  34  PARAMETERS
+  35  data(T, M)
+  36  mult_coeffs(M, P, C)
+  37  mult_coeffs_intercept(P, C)
+  38  PLS_intercept(P)
+  39  FCMc(C, M)
+  40  meas_mean(M)
+  41  meas_std(M)
+  42  pred_mean(P)
+  43  pred_std(P)
+  44  qual_coeffs(M, Q, T)
+  45  q_meas_mean(T,M)
+  46  q_meas_std(T,M)
+  47  q_pred_mean(Q)
+  48  q_pred_std(Q)
+  49  contrib_past(Q)
+  50  qual_set(Q)
+  51  input_const(U, max_min)
+  52  ;
+  53   
+GDXIN   E:\OneDrive\Research\PenSim_SSM\MPCinitialize.gdx
+--- LOAD  data = 1:data
+  56  $load mult_coeffs
+****                  $492
+  57  $load mult_coeffs_intercept
+****                            $492
+  58  $load PLS_intercept
+****                    $492
+  59  $load FCMc
+****           $492
+  60  $load meas_mean
+****                $492
+  61  $load meas_std
+****               $492
+  62  $load pred_mean
+****                $492
+  63  $load pred_std
+****               $492
+  64  $load qual_coeffs
+****                  $492
+  65  $load q_meas_mean
+****                  $495
+  66  $load q_meas_std
+****                 $495
+--- LOAD  q_pred_mean = 5:q_pred_mean
+--- LOAD  q_pred_std = 6:q_pred_std
+  69  $load contrib_past
+****                   $492
+--- LOAD  qual_set = 7:qual_set
+--- LOAD  input_const = 8:input_const
+  72   
+  74   
+  75   
+  76  VARIABLES
+  77  X(T,M) 'All trajectories measured by mult model and used by quality model'
+  78  Y(T,P) 'Measurements'
+  79  Dist_sqrd(T,C) 'distance from condition at time T to cluster C center'
+  80  Dist_Inv(T,C) 'inverse of distance squared'
+  81  Membership(T, C) 'degree of belonging of time step T to cluster C'
+  82  Quality(Q) 'qualities'
+  83  JMPC 'MPC objecive'
+  84  Dummy
+  85   
+  86   
+  87  ;
+  88   
+  89  * Initialize variables
+  90  X.l(T,M) = data(T,M);
+  91   
+  92  * fix the values corresponding to curent batch condition (ie current state
+       and output)
+  93  x.fx('1','1') = data('1', '1');
+  94   
+  95  x.fx('1','2') = data('1', '2');
+  96   
+  97  x.fx('1','3') = data('1', '3');
+  98   
+  99  x.fx('1','4') = data('1', '4');
+ 100   
+ 101  loop (T,
+ 102      x.lo(T, '5') = input_const('1', '1');
+ 103      x.up(T, '5') = input_const('1', '2');
+ 104   
+ 105      x.lo(T, '6') = input_const('2', '1');
+ 106      x.up(T, '6') = input_const('2', '2');
+ 107   
+ 108      x.lo(T, '7') = input_const('3', '1');
+ 109      x.up(T, '7') = input_const('3', '2');
+ 110  );
+ 111   
+ 112   
+ 113   
+ 114   
+ 115   
+ 116  loop ( T $(ord(T)>1),
+ 117      Dist_sqrd.l(T-1,C) = sum(M, ((x.l(T-1,M)-FCMc(C,M))*(x.l(T-1,M)-FCMc(C
+****                      $352                        $141,352                 $
+      ,M))));
+      352
+ 118      Dist_Inv.l(T-1,C) = 1/(Dist_sqrd.l(T-1,C));
+****                     $352                    $352
+ 119      Membership.l(T-1,C) = Dist_Inv.l(T-1,C)/sum(C1,Dist_Inv.l(T-1,C1));
+****                       $352                $352    $352              $352
+ 120   
+ 121      x.l(T,'1') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeff
+****                                $352                           $352         
+      s(M, '1', C))) +
+      $141      $352
+ 122           sum(C, mult_coeffs_intercept('1',C)*Membership.l(T-1, C))+PLS_int
+****               $352                   $141  $352                 $352       
+      ercept('1'))
+           $141
+ 123           *pred_std('1')+pred_mean('1')-meas_mean('1'))/meas_std('1');
+****                   $141           $141           $141           $141
+ 124   
+ 125      x.l(T,'2') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeff
+****                                $352                           $352         
+      s(M, '2', C))) +
+                $352
+ 126           sum(C, mult_coeffs_intercept('2',C)*Membership.l(T-1, C))+PLS_int
+****               $352                         $352                 $352
+      ercept('2'))
+ 127           *pred_std('2')+pred_mean('2')-meas_mean('2'))/meas_std('2');
+ 128   
+ 129      x.l(T,'3') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeff
+****                                $352                           $352         
+      s(M, '3', C))) +
+                $352
+ 130           sum(C, mult_coeffs_intercept('3',C)*Membership.l(T-1, C))+PLS_int
+****               $352                         $352                 $352
+      ercept('3'))
+ 131           *pred_std('3')+pred_mean('3')-meas_mean('3'))/meas_std('3');
+ 132   
+ 133      x.l(T,'4') = ((sum(M, sum(C, x.l(T-1,M)*Membership.l(T-1,C)*mult_coeff
+****                                $352                           $352         
+      s(M, '4', C))) +
+                $352
+ 134           sum(C, mult_coeffs_intercept('4',C)*Membership.l(T-1, C))+PLS_int
+****               $352                         $352                 $352
+      ercept('4'))
+ 135           *pred_std('4')+pred_mean('4')-meas_mean('4'))/meas_std('4');
+ 136  );
+ 137   
+ 138  loop (T,
+ 139   
+ 140     y.l(T,'1')= x.l(T,'1');
+ 141     y.l(T,'2')= x.l(T,'2');
+ 142     y.l(T,'3')= x.l(T,'3');
+ 143     y.l(T,'4')= x.l(T,'4');
+ 144  );
+ 145   
+ 146   
+ 147   
+ 148   
+ 149  loop (Q,
+ 150   
+ 151           Quality.l(Q) = (contrib_past(Q) + sum(T, sum(M,
+****                                      $141
+ 152                   (x.l(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_me
+****                                                                $141        
+      as_std(T,M)
+           $141
+ 153                   *qual_coeffs(M, Q, T))));
+****                              $141
+ 154   
+ 155   
+ 156  );
+ 157   
+ 158   
+ 159   
+ 160  JMPC.l =sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - qual_set(Q)));
+ 161   
+ 162   
+ 163   
+ 164   
+ 165  EQUATIONS
+ 166  Dist_eqn(T,C)
+ 167  Dist_Inv_eqn(T,C)
+ 168  Membership_eqn(T,C)
+ 169   
+ 170  Y1_Mult_Model(T)
+ 171  Y2_Mult_Model(T)
+ 172  Y3_Mult_Model(T)
+ 173  Y4_Mult_Model(T)
+ 174   
+ 175  Quality_eqn(Q)
+ 176   
+ 177  Objective
+ 178  ;
+ 179   
+ 180  Dist_eqn(T,C)$(ord(T)<card(T)) .. Dist_sqrd(T,C) =E=  sum(M, ((x(T,M)-FCMc
+      (C,M))*(x(T,M)-FCMc(C,M))));
+ 181  Dist_Inv_eqn(T,C)$(ord(T)<card(T)) .. Dist_Inv(T,C) * Dist_sqrd(T,C) =E= 1
+      ;
+ 182  Membership_eqn(T,C)$(ord(T)<card(T)) ..  Membership(T,C)*sum(C1, Dist_Inv(
+      T,C1)) =E= Dist_Inv(T,C);
+ 183   
+ 184  Y1_Mult_Model(T) $(ord(T)>1) .. x(T, '1') =e=  ((sum(M, sum(C, x(T-1,M)*Me
+      mbership(T-1,C)*mult_coeffs(M, '1', C))) +
+ 185    sum(C, mult_coeffs_intercept('1',C)*Membership(T-1, C))+PLS_intercept('1
+      '))
+ 186    *pred_std('1')+pred_mean('1')-meas_mean('1'))/meas_std('1');
+ 187   
+ 188  Y2_Mult_Model(T) $(ord(T)>1) .. x(T, '2') =e=   ((sum(M, sum(C, x(T-1,M)*M
+      embership(T-1,C)*mult_coeffs(M, '2', C))) +
+ 189           sum(C, mult_coeffs_intercept('2',C)*Membership(T-1, C))+PLS_inter
+      cept('2'))
+ 190           *pred_std('2')+pred_mean('2')-meas_mean('2'))/meas_std('2');
+ 191   
+ 192  Y3_Mult_Model(T) $(ord(T)>1) .. x(T, '3') =e=  ((sum(M, sum(C, x(T-1,M)*Me
+      mbership(T-1,C)*mult_coeffs(M, '3', C))) +
+ 193           sum(C, mult_coeffs_intercept('3',C)*Membership(T-1, C))+PLS_inter
+      cept('3'))
+ 194           *pred_std('3')+pred_mean('3')-meas_mean('3'))/meas_std('3');
+ 195   
+ 196  Y4_Mult_Model(T) $(ord(T)>1) .. x(T, '4') =e=  ((sum(M, sum(C, x(T-1,M)*Me
+      mbership(T-1,C)*mult_coeffs(M, '4', C))) +
+ 197           sum(C, mult_coeffs_intercept('4',C)*Membership(T-1, C))+PLS_inter
+      cept('4'))
+ 198           *pred_std('4')+pred_mean('4')-meas_mean('4'))/meas_std('4');
+ 199   
+ 200  Quality_eqn(Q) .. Quality(Q) =e= (contrib_past(Q) + sum(T, sum(M,
+ 201                   (x.l(T,M)*meas_std(M)+meas_mean(M)-q_meas_mean(T,M))/q_me
+      as_std(T,M)
+ 202                   *qual_coeffs(M, Q, T))));
+ 203   
+ 204   
+ 205   
+ 206  Objective .. JMPC =e= sum(Q, (quality.l(Q) - qual_set(Q))*(quality.l(Q) - 
+      qual_set(Q)));
+ 207  *+ .000005*sum(T$(ord(T)>1), (x(T,'5') - 0)*(x(T,'5')-0)+(x(T,'6') - 0)*(x
+      (T,'6')-0)+(x(T,'7') - 0)*(x(T,'7')-0));
+ 208   
+ 209   
+ 210   
+ 211  MODEL QBMPC /all/;
+ 212   
+ 213  solve QBMPC using nlp minimizing JMPC;
+****                                       $257
+ 214   
+ 215  execute_unload 'matsol2.gdx', x, JMPC, Quality;
+
+**** LIST OF STRAY NAMES - CHECK DECLARATIONS FOR SPURIOUS COMMAS
+**** STRAY NAME PD OF TYPE SET  
+GAMS Rev 240  WEX-WEI 24.0.2 x86_64/MS Windows          04/08/14 21:00:27 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Error Messages
+
+
+141  Symbol neither initialized nor assigned
+        A wild shot: You may have spurious commas in the explanatory
+        text of a declaration. Check symbol reference list.
+257  Solve statement not checked because of previous errors
+352  Set has not been initialized
+492  Symbol not in GDX
+495  Load dimension are different
+
+**** 61 ERROR(S)   0 WARNING(S)
+GAMS Rev 240  WEX-WEI 24.0.2 x86_64/MS Windows          04/08/14 21:00:27 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
+
+     1        1 INPUT          0       0  E:\OneDrive\Research\PenSim_SSM\QBMPC_
+                                          Pen.gms
+     2       18 GDXIN          1      18  E:\OneDrive\Research\PenSim_SSM\QBMPCv
+                                          2sets.gdx
+     3       54 GDXIN          1      54  E:\OneDrive\Research\PenSim_SSM\MPCini
+                                          tialize.gdx
+
+
+COMPILATION TIME     =        0.094 SECONDS      3 Mb  WEX240-240 Feb 14, 2013
+
+
+USER: Chemical Engineering                           G120713:0528AN-WIN
+      McMaster University                                        DC1678
+      License for teaching and research at degree granting institutions
+
+
+**** FILE SUMMARY
+
+Input      E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.gms
+Output     E:\OneDrive\Research\PenSim_SSM\QBMPC_Pen.lst
+
+**** USER ERROR(S) ENCOUNTERED
